@@ -8,7 +8,7 @@ A party platformer for 1 to 8 players. Each round everyone picks a piece from th
 
 ## Layout
 
-`index.html` is the game as it came from the artifact: its markup and its inline script. `src/styles/game.css` is its stylesheet. It saves the player setup in localStorage under `pieceparty` and the solo best times under `pieceparty-best`. `src/main.ts` is the one module the build adds, and it registers the service worker.
+`index.html` is the markup and `src/styles/game.css` the stylesheet. `src/main.ts` starts the game from its typed modules in `src/game/` and registers the service worker. The game saves the player setup in localStorage under `pieceparty` and the solo best times under `pieceparty-best`.
 
 ## Installing and playing offline
 
