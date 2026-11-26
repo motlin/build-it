@@ -8,7 +8,17 @@ A party platformer for 1 to 8 players. Each round everyone picks a piece from th
 
 ## Layout
 
-`index.html` is the markup and `src/styles/game.css` the stylesheet. `src/main.ts` starts the game from its typed modules in `src/game/` and registers the service worker. The game saves the player setup in localStorage under `pieceparty` and the solo best times under `pieceparty-best`.
+`index.html` is the markup and `src/styles/game.css` the stylesheet. `src/main.ts` starts each part of the game on its own, so a failure in one leaves the rest working, then registers the service worker.
+
+`src/game/` is the game:
+
+- `types.ts` holds the shapes the modules share, and `state.ts` the state they share: the level in play, the player setup, the game in progress, the world with the run in it, and the piece being placed.
+- `geometry.ts` is the 32 by 18 grid of 40 pixel cells and its collision math. `pieces.ts` defines every piece, with the cells each rotation covers, and `levels.ts` the eight levels. `course.ts` sets the level in play and decides where a piece may go.
+- `world.ts` builds the world from the level and the placed pieces and moves every lift, saw, cannon and laser on a shared clock, and `physics.ts` runs, jumps, lands and knocks out the runner. `solver.ts` is a cautious grid model of a course that Surprise me and the CPU players use to tell whether it can be finished, and `cpu.ts` is the CPU players, which plan their runs with the real physics. None of these touch the page, so the unit tests run them directly.
+- `draw.ts` draws the course and the thumbnails, `ui.ts` runs the game's flow and its screens (setup, level vote, picking, placing, runs, results and solo practice), `input.ts` takes the keyboard, the touch buttons and the mouse, `loop.ts` is the frame loop, `sound.ts` the sound effects and `effects.ts` the particles.
+- `storage.ts` saves the player setup in localStorage under `pieceparty` and the solo best times under `pieceparty-best`, the artifact's keys.
+
+`tests/unit/game.test.ts` checks the pieces' rotations and placement, that every level's start and flag sit on its ground, that Surprise me can build a finishable course on every level, and the runner falling, jumping, bouncing off a spring and meeting spikes. `tests/unit/storage.test.ts` checks saving and loading. `tests/browser/play.spec.ts` builds across The Gap and runs to the flag in solo practice, and plays a 2-player round.
 
 ## Installing and playing offline
 
@@ -24,4 +34,6 @@ The game installs from the browser as a standalone app and plays offline. `src/p
 - `just worker` builds and serves `dist/` through `wrangler dev`, the way Cloudflare serves it.
 - `just verify` runs lint, type checks, the build, Fallow, the pre-commit hooks, the unit tests and the Playwright tests.
 
-Pushing to `main` deploys through `.github/workflows/deploy.yml`, which needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets.
+## Deploying
+
+The Worker serves `dist/` as static assets, with no Worker script; see `wrangler.toml`. Pushing to `main` deploys to build-it.motlin.com through `.github/workflows/deploy.yml`, which runs the checks and both test suites, then `wrangler deploy --domain build-it.motlin.com`. It needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets. `just deploy` does the same from a machine logged in to Cloudflare.
