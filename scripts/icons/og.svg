@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#33aef0"/><stop offset="1" stop-color="#c4f0ff"/></linearGradient>
+<linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f1830" stop-opacity="0"/><stop offset="1" stop-color="#0f1830" stop-opacity=".35"/></linearGradient>
+<!-- one 40px build cell, as the game's cell() -->
+<g id="cell"><rect x="1" y="1" width="38" height="38" rx="7" fill="#3b43a3"/><rect x="1" y="1" width="38" height="34" rx="7" fill="#5a67d8"/><rect x="6" y="5" width="28" height="4" rx="2" fill="#8b96ff"/></g>
+<g id="crumb"><rect x="1" y="1" width="38" height="38" rx="7" fill="#b98b2e"/><rect x="1" y="1" width="38" height="34" rx="7" fill="#e9c46a"/><rect x="6" y="5" width="28" height="4" rx="2" fill="#f6dc96"/></g>
+<g id="spikes"><rect x="1" y="31" width="38" height="9" rx="3" fill="#e63946"/><path d="M1 31L7.33 5L13.67 31ZM13.67 31L20 5L26.33 31ZM26.33 31L32.67 5L39 31Z" fill="#e4e8ef"/><path d="M7.33 5L13.67 31H7.33ZM20 5L26.33 31H20ZM32.67 5L39 31H32.67Z" fill="#a7afbd"/></g>
+<g id="saw"><polygon fill="#dfe4ec" points="20,0 12.56,3.36 17.32,10 9.19,9.19 10,17.32 3.36,12.56 0,20 -3.36,12.56 -10,17.32 -9.19,9.19 -17.32,10 -12.56,3.36 -20,0 -12.56,-3.36 -17.32,-10 -9.19,-9.19 -10,-17.32 -3.36,-12.56 0,-20 3.36,-12.56 10,-17.32 9.19,-9.19 17.32,-10 12.56,-3.36"/><circle r="9" fill="#a7afbd"/><circle r="4" fill="#e63946"/></g>
+<g id="fire"><circle r="10" fill="#ff6b35"/><circle r="5" fill="#ffd166"/></g>
+<!-- hard hat for a 32px player, origin at top-centre of the body -->
+<g id="hat"><path d="M-12.72-3.2H19.76Q21.76-3.2 21.76-1.12Q21.76.96 19.76.96H-12.72Q-14.72.96-14.72-1.12Q-14.72-3.2-12.72-3.2Z" fill="#d99a00"/><path d="M-14.4-2.24A12.8 12.16 0 0 1 11.2-2.24Z" fill="#ffc300"/><path d="M-8.98-5.91A7.94 9.97 0 0 1 4.01-9.29" fill="none" stroke="#ffe27a" stroke-width="2.88"/><ellipse cx="4.48" cy="-9.54" rx="1.92" ry="2.88" transform="rotate(34 4.48 -9.54)" fill="#fff" fill-opacity=".6"/></g>
+<g id="dot"><circle r="5" stroke="#fff" stroke-width="2"/></g>
+</defs>
+<rect width="1200" height="630" fill="url(#sky)"/>
+<g transform="scale(1.5)">
+<!-- backdrop -->
+<circle cx="690" cy="46" r="40" fill="#fff1a8"/>
+<g fill="#fff" fill-opacity=".92"><ellipse cx="470" cy="52" rx="42" ry="15"/><ellipse cx="449" cy="55" rx="24" ry="13"/><ellipse cx="485" cy="57" rx="28" ry="11"/><ellipse cx="120" cy="212" rx="48" ry="17"/><ellipse cx="96" cy="215" rx="27" ry="14"/><ellipse cx="138" cy="217" rx="32" ry="13"/></g>
+<ellipse cx="150" cy="470" rx="340" ry="170" fill="#9fe6c9"/><ellipse cx="690" cy="480" rx="360" ry="180" fill="#9fe6c9"/><ellipse cx="430" cy="520" rx="360" ry="165" fill="#74d6ae"/>
+<!-- lava pit -->
+<rect x="190" y="392" width="460" height="40" fill="#e85d04"/>
+<path d="M200 420V386q10-9 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0V420Z" fill="#ffb703"/>
+<path d="M200 420V402q10-7 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0V420Z" fill="#e85d04"/>
+<!-- ground: start ledge and flag ledge -->
+<g><rect x="-20" y="320" width="220" height="130" rx="12" fill="#8a5a36"/><g fill="#9d6a41"><circle cx="24" cy="356" r="6"/><circle cx="77" cy="393" r="6"/><circle cx="130" cy="362" r="6"/><circle cx="172" cy="398" r="6"/><circle cx="40" cy="408" r="6"/></g><path d="M-20 320H188a12 12 0 0 1 12 12a4 4 0 0 1-4 4H-20Z" fill="#38b26b"/><rect x="-12" y="323" width="196" height="4" rx="2" fill="#74e8a0"/></g>
+<g><rect x="640" y="240" width="180" height="210" rx="12" fill="#8a5a36"/><g fill="#9d6a41"><circle cx="664" cy="282" r="6"/><circle cx="717" cy="319" r="6"/><circle cx="770" cy="286" r="6"/><circle cx="682" cy="358" r="6"/><circle cx="745" cy="382" r="6"/><circle cx="784" cy="345" r="6"/><circle cx="700" cy="402" r="6"/></g><path d="M652 240H820V256H644a4 4 0 0 1-4-4a12 12 0 0 1 12-12Z" fill="#38b26b"/><rect x="648" y="243" width="164" height="4" rx="2" fill="#74e8a0"/></g>
+<rect y="330" width="800" height="90" fill="url(#dusk)"/>
+<!-- flag -->
+<rect x="725" y="96" width="6" height="144" rx="3" fill="#f1faee"/>
+<rect x="731" y="100" width="42" height="28" fill="#fff"/><path d="M745 100h14v14h-14ZM731 114h14v14h-14ZM759 114h14v14h-14Z" fill="#1b1b2f"/>
+<circle cx="728" cy="96" r="6" fill="#ffd166"/>
+<!-- spring -->
+<rect x="164" y="311" width="32" height="9" rx="3" fill="#3d405b"/><path d="M172 294L188 298.25L172 302.5L188 306.75L172 311" fill="none" stroke="#b5bacb" stroke-width="3"/><rect x="163" y="288" width="34" height="9" rx="4" fill="#ef476f"/>
+<use href="#dot" x="168" y="284" fill="#ff8c00"/>
+<!-- plank with spikes on its end -->
+<use href="#cell" x="240" y="240"/><use href="#cell" x="280" y="240"/><use href="#cell" x="320" y="240"/><use href="#dot" x="248" y="248" fill="#06d6a0"/>
+<use href="#spikes" x="320" y="200"/>
+<!-- crumble blocks -->
+<use href="#crumb" x="400" y="200"/><use href="#crumb" x="440" y="200"/><path d="M414 209L422 220L415 230M458 208L451 219L461 229" fill="none" stroke="#8a6420" stroke-width="2"/><use href="#dot" x="408" y="208" fill="#9b5de5"/>
+<!-- saw on its track -->
+<path d="M380 330H500" stroke="#3d405b" stroke-width="6" stroke-linecap="round"/><use href="#saw" transform="translate(452 330) rotate(8)"/>
+<!-- fire bar -->
+<circle cx="500" cy="88" r="11" fill="#4a4e69"/><use href="#fire" x="506.2" y="111.2"/><use href="#fire" x="512.4" y="134.4"/><use href="#fire" x="518.6" y="157.5"/><use href="#fire" x="524.8" y="180.7"/><circle cx="500" cy="88" r="5" fill="#22223b"/>
+<!-- cloud platform -->
+<ellipse cx="580" cy="286" rx="60" ry="10" fill="#c8e1f0" fill-opacity=".9"/><g fill="#fff"><ellipse cx="542" cy="282" rx="22" ry="12"/><ellipse cx="580" cy="278" rx="26" ry="14"/><ellipse cx="618" cy="282" rx="22" ry="12"/></g>
+<!-- players -->
+<g transform="translate(36 288)"><rect width="32" height="32" fill="#653c95"/><rect x="2.5" y="2.5" width="27" height="27" fill="#9b5de5"/><use href="#hat" x="16" y="1"/></g>
+<g transform="translate(98 288)"><rect width="32" height="32" fill="#a65b00"/><rect x="2.5" y="2.5" width="27" height="27" fill="#ff8c00"/><use href="#hat" x="16" y="1"/></g>
+<g transform="translate(264 208)"><rect width="32" height="32" fill="#048b68"/><rect x="2.5" y="2.5" width="27" height="27" fill="#06d6a0"/><use href="#hat" x="16" y="1"/></g>
+<g fill="#fff"><circle cx="540" cy="236" r="4" fill-opacity=".45"/><circle cx="552" cy="222" r="5" fill-opacity=".6"/><circle cx="565" cy="209" r="6" fill-opacity=".75"/></g>
+<g transform="translate(578 158) rotate(8 16 16)"><rect width="32" height="32" fill="#9b2e48"/><rect x="2.5" y="2.5" width="27" height="27" fill="#ef476f"/><use href="#hat" x="16" y="1"/></g>
+</g>
+<!-- title, styled like the game's header: navy housing, "It!" in sunflower -->
+<rect x="52" y="44" width="500" height="186" rx="30" fill="#0f1830" fill-opacity=".94"/>
+<text x="88" y="150" font-family="Fredoka, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="104" letter-spacing="-1" fill="#f4f7ff"><tspan font-weight="400">Build</tspan><tspan dx="28" font-weight="700" fill="#ffd166">It!</tspan></text>
+<text x="92" y="198" font-family="Fredoka, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="25" font-weight="400" fill="#a9b8da">Place a piece. Race to the flag.</text>
+</svg>
