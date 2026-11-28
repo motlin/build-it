@@ -7,7 +7,54 @@ import {course, game, sim} from "./state.ts";
 import type {Action, CpuRun, Pick, Piece, PieceType, PlanNode, Planner, Runner} from "./types.ts";
 
 // The computer players: which piece to take, where to put it, and how to run. A run is planned with the real physics
-// on a frozen world, then followed, and re-planned when the runner is knocked off course.
+// on a frozen world, then followed with a person's slips and late reactions, and re-planned on the move when the
+// runner is knocked off course.
+
+/**
+ * Per skill: how often it slips to a random move, the search size, think time (ms) at the start and when re-planning,
+ * the seconds before it gives up, whether it plans around moving hazards, and how often it places a piece at random.
+ */
+const SK = [
+	{
+		slip: 0.12,
+		nodes: 7000,
+		think: 4500,
+		rethink: 600,
+		quit: 50,
+		danger: true,
+		rand: 0.4,
+	},
+	{
+		slip: 0.04,
+		nodes: 7000,
+		think: 4500,
+		rethink: 600,
+		quit: 50,
+		danger: true,
+		rand: 0,
+	},
+	{
+		slip: 0,
+		nodes: 7000,
+		think: 4500,
+		rethink: 600,
+		quit: 50,
+		danger: true,
+		rand: 0,
+	},
+] as const;
+const skill = (): (typeof SK)[number] => SK[game.skill]!;
+/**
+ * A person's feel for every CPU: up to `lag` steps late to react, hesitating before some jumps, letting go early for a
+ * short hop, and holding a direction a bit too long.
+ */
+const HUM =
+{
+	lag: 3,
+	hesitate: 0.08,
+	hop: 0.08,
+	over: 0.1,
+};
 
 /**
  * The box card a CPU takes: now and then the Mystery card, otherwise blocks when the course cannot be finished and
@@ -56,7 +103,7 @@ export function cpuPlacement(type: PieceType): Piece | null
 		if (valid(q, placeAmong(type))) cands.push(q);
 	}
 	if (!cands.length) return null;
-	if (game.skill === 0 && Math.random() < 0.4) return cands[0]!;
+	if (Math.random() < skill().rand) return cands[0]!;
 	const now = explore(game.pieces);
 	const lim = [40, 120, 220][game.skill]!;
 	if (type === "bomb")
@@ -418,7 +465,7 @@ function planStep(P: Planner, ms: number): void
 	const t0 = performance.now();
 	while (!P.done && performance.now() - t0 < ms)
 	{
-		if (!P.heap.length || P.n > 7000)
+		if (!P.heap.length || P.n > skill().nodes)
 		{
 			P.done = true;
 			break;
@@ -440,7 +487,8 @@ function planStep(P: Planner, ms: number): void
 				sw: r.sw,
 				parent: n,
 				a,
-				g: n.g + 1,
+				// Changing moves costs a little, so plans keep to steady presses.
+				g: n.g + 1 + (n.a && (n.a[0] !== a[0] || n.a[1] !== a[1]) ? 0.6 : 0),
 				f: 0,
 			};
 			if (r.res === "win")
@@ -494,10 +542,13 @@ export function cpuInitRun(): void
 		t0: 0,
 	};
 	run.cpu = cpu;
-	cpu.P = makePlanner(run.p, LV.sw ? 0 : 1, true, performance.now());
+	cpu.P = makePlanner(run.p, LV.sw ? 0 : 1, skill().danger, performance.now());
 }
 
-/** Plans for a slice of each frame; once done (or out of time), turns the best path into the plan to follow. */
+/**
+ * Plans for a slice of each frame; once done (or out of time), turns the best path into the plan to follow, or, when
+ * re-planning during a run, adds it after the stretch the runner is still following.
+ */
 export function cpuPlanFrame(now: number): void
 {
 	const run = sim.run!;
@@ -505,8 +556,8 @@ export function cpuPlanFrame(now: number): void
 	const P = C.P;
 	if (!P) return;
 	planStep(P, 12);
-	if (!P.done && now - P.t0 < (run.state === "ready" ? 4500 : 1500)) return;
-	if (!P.win && P.useDanger)
+	if (!P.done && now - P.t0 < (run.state === "ready" ? skill().think : skill().rethink)) return;
+	if (!P.win && P.useDanger && run.state === "ready")
 	{
 		C.P = makePlanner(P.root.p, P.root.sw, false, now);
 		C.P.carry = P;
@@ -527,35 +578,126 @@ export function cpuPlanFrame(now: number): void
 		n = n.parent;
 	}
 	plan.reverse();
-	C.plan = plan;
-	C.i = 0;
-	C.sc = 0;
-	C.prevJ = 0;
 	C.P = null;
 	C.empty = plan.length ? 0 : C.empty + 1;
 	if (run.state === "ready")
 	{
+		C.plan = plan;
+		C.i = 0;
+		C.sc = 0;
+		C.prevJ = 0;
 		C.ready = true;
 		C.t0 = now;
 	}
+	else C.plan = C.plan.concat(plan);
 }
 
-/** Presses the planned keys each physics step, re-planning when the runner strays from the plan. */
+/**
+ * Re-plans without stopping: keeps moving along a short bridge (the rest of the old plan, or easing off) and plans
+ * from where that bridge will end.
+ */
+function startReplan(): void
+{
+	const run = sim.run!;
+	const C = run.cpu!;
+	const p = run.p;
+	const k = 6;
+	const tryBridge = (
+		acts: Action[],
+	):
+	{
+		out: CpuRun["plan"];
+		sp: Runner;
+		sw: number;
+	} | null =>
+	{
+		const sp =
+		{
+			...p,
+		};
+		let sw = sim.world.swOn ? 1 : 0;
+		const out: CpuRun["plan"] = [];
+		for (const a of acts)
+		{
+			const r = simStep(sp, a, sw, null);
+			sw = r.sw;
+			if (r.res === "dead") return null;
+			out.push(
+				{
+					a,
+					x: sp.x,
+					y: sp.y,
+				},
+			);
+			if (r.res === "win") break;
+		}
+		return {
+			out,
+			sp,
+			sw,
+		};
+	};
+	const acts = C.plan.slice(C.i, C.i + k).map((e) => e.a);
+	while (acts.length < k) acts.push([0, 0]);
+	const still = Array.from(
+		{
+			length: k,
+		},
+		(): Action => [0, 0],
+	);
+	const b = tryBridge(acts) ??
+		tryBridge(still) ??
+		{
+			out: acts.map((a) => (
+			{
+				a,
+				x: p.x,
+				y: p.y,
+			})),
+			sp:
+			{
+				...p,
+			},
+			sw: sim.world.swOn ? 1 : 0,
+		};
+	C.plan = b.out;
+	C.i = 0;
+	C.sc = 0;
+	C.P = makePlanner(b.sp, b.sw, skill().danger, performance.now());
+}
+
+/** Presses the planned keys each physics step, the way a person would, re-planning when the runner strays from the plan. */
 export function cpuControl(): void
 {
 	const run = sim.run!;
 	const C = run.cpu!;
 	const p = run.p;
-	if (run.t > 50 || C.empty > 5)
+	if (run.t > skill().quit || C.empty > 5)
 	{
 		die(-1, "gaveup");
+		return;
+	}
+	if ((C.hold ?? 0) > 0)
+	{
+		C.hold = C.hold! - 1;
+		sim.keys =
+		{
+			l: 0,
+			r: 0,
+			j: 0,
+			d: 0,
+		};
+		C.prevJ = 0;
 		return;
 	}
 	if (C.sc % MACRO === 0)
 	{
 		const e = C.i > 0 ? C.plan[C.i - 1] : null;
-		if ((e && Math.hypot(e.x - p.x, e.y - p.y) > 16) || C.i >= C.plan.length)
+		if (!C.P && ((e && Math.hypot(e.x - p.x, e.y - p.y) > 18) || C.i >= C.plan.length)) startReplan();
+		let a: Action = C.i < C.plan.length ? C.plan[C.i]!.a : [0, 0];
+		if (a[1] && !C.prevJ && p.onG && Math.random() < HUM.hesitate)
 		{
+			C.hold = 10 + rand(30);
 			sim.keys =
 			{
 				l: 0,
@@ -563,21 +705,42 @@ export function cpuControl(): void
 				j: 0,
 				d: 0,
 			};
-			C.P = makePlanner(p, sim.world.swOn ? 1 : 0, true, performance.now());
 			return;
 		}
-		let a = C.plan[C.i]!.a;
-		if (Math.random() < [0.12, 0.04, 0][game.skill]!) a = ACTS[rand(ACTS.length)]!;
-		sim.keys =
-		{
-			l: a[0] < 0 ? 1 : 0,
-			r: a[0] > 0 ? 1 : 0,
-			j: a[1],
-			d: a[2] ?? 0,
-		};
-		if (a[1] && !C.prevJ) p.buf = 0.12;
-		C.prevJ = a[1];
-		C.i++;
+		if (a[0] === 0 && C.lastH && C.cur?.[0] && Math.random() < HUM.over) C.overT = 2 + rand(3);
+		else if (Math.random() < skill().slip) a = ACTS[rand(ACTS.length)]!;
+		if (!C.cur || a[0] !== C.cur[0] || a[1] !== C.cur[1]) C.lag = rand(HUM.lag);
+		C.want = a;
+		if (C.i < C.plan.length) C.i++;
 	}
+	if ((C.lag ?? 0) > 0) C.lag = C.lag! - 1;
+	else C.cur = C.want ?? [0, 0];
+	let a: Action = C.cur ?? [0, 0];
+	if ((C.overT ?? 0) > 0)
+	{
+		C.overT = C.overT! - 1;
+		if (!a[0]) a = [C.lastH!, a[1]];
+	}
+	const press = a[1] && !C.prevJ;
+	if (press)
+	{
+		p.buf = 0.12;
+		C.cut = Math.random() < HUM.hop ? 3 + rand(5) : -1;
+	}
+	let j = a[1];
+	if (j && (C.cut ?? -1) >= 0)
+	{
+		if (C.cut === 0) j = 0;
+		else C.cut = C.cut! - 1;
+	}
+	sim.keys =
+	{
+		l: a[0] < 0 ? 1 : 0,
+		r: a[0] > 0 ? 1 : 0,
+		j,
+		d: a[2] ?? 0,
+	};
+	C.prevJ = a[1];
+	if (a[0]) C.lastH = a[0];
 	C.sc++;
 }

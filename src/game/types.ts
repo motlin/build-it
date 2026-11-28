@@ -428,6 +428,19 @@ export interface CpuRun
 	dSw: Float32Array | null;
 	dg: Uint8Array;
 	t0: number;
+	/** Steps left standing still, hesitating before a jump. */
+	hold?: number;
+	/** Steps left before it reacts to a new move. */
+	lag?: number;
+	/** The move it is making, and the move it means to make once it reacts. */
+	cur?: Action;
+	want?: Action;
+	/** Steps left holding its last direction too long. */
+	overT?: number;
+	/** Its last direction. */
+	lastH?: number;
+	/** Steps until it lets go of jump for a short hop, or -1 for a full jump. */
+	cut?: number;
 }
 
 export interface Particle

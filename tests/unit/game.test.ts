@@ -1,6 +1,6 @@
 import {afterEach, expect, it, vi} from "vite-plus/test";
 import {placeAmong, setLevel, valid} from "../../src/game/course.ts";
-import {cpuChoosePick} from "../../src/game/cpu.ts";
+import {cpuChoosePick, cpuControl, cpuInitRun} from "../../src/game/cpu.ts";
 import {STEP} from "../../src/game/geometry.ts";
 import type {Sound} from "../../src/game/sound.ts";
 import {LEVELS} from "../../src/game/levels.ts";
@@ -826,4 +826,28 @@ it("zaps when a laser comes on during a run, louder the closer the runner is, an
 			betweenRuns: [],
 		},
 	);
+});
+
+it("has a CPU runner react to its plan a few steps late, like a person would", () =>
+{
+	const run = startRun([]);
+	game.skill = 1;
+	cpuInitRun();
+	const cpu = run.cpu!;
+	cpu.P = null;
+	cpu.plan = [
+		{
+			a: [1, 0],
+			x: run.p.x,
+			y: run.p.y,
+		},
+	];
+	vi.spyOn(Math, "random").mockReturnValue(0.99);
+	const right: number[] = [];
+	for (let i = 0; i < 4; i++)
+	{
+		cpuControl();
+		right.push(sim.keys.r);
+	}
+	expect(right).toStrictEqual([0, 0, 1, 1]);
 });

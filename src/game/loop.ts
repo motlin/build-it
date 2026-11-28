@@ -9,7 +9,7 @@ import {cpuTick, nextRunner} from "./ui.ts";
 import {updateWorld} from "./world.ts";
 
 // The frame loop: CPU turns, then fixed physics steps while a run is on, then particles and the drawing. A CPU run
-// stands still while its planner is working.
+// keeps moving while its planner works.
 
 /** Read through a function, since a CPU's controls can end the run within a step. */
 const going = (run: Run): boolean => run.state === "go";
@@ -29,11 +29,11 @@ function frame(now: number): void
 		while (acc >= STEP)
 		{
 			updateWorld(STEP, run.state === "go");
-			if (going(run) && !run.cpu?.P)
+			if (going(run))
 			{
 				run.t += STEP;
 				if (run.cpu) cpuControl();
-				if (going(run) && !run.cpu?.P) stepRun(STEP);
+				if (going(run)) stepRun(STEP);
 			}
 			acc -= STEP;
 		}
