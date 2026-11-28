@@ -1,6 +1,6 @@
 import {valid} from "./course.ts";
 import {COLS, DIRV, H, ROWS, T, W} from "./geometry.ts";
-import {DEFS, isBomb, pieceCells} from "./pieces.ts";
+import {DEFS, isBomb, onTop, pieceCells} from "./pieces.ts";
 import {course, game, placing, sim} from "./state.ts";
 import type {Level, Piece, PieceType} from "./types.ts";
 
@@ -212,6 +212,50 @@ function drawPiece(g: CanvasRenderingContext2D, p: Piece, t: number): void
 				g.beginPath();
 				g.arc(X + 10 + k * 20, Y + 11, 2, 0, 7);
 				g.fill();
+			}
+			break;
+		}
+		case "spikeblock":
+		{
+			g.fillStyle = "#3d405b";
+			rr(g, X + 1, Y + 15, T - 2, T - 16, 6);
+			g.fill();
+			g.fillStyle = "#55597a";
+			rr(g, X + 5, Y + 20, T - 10, 4, 2);
+			g.fill();
+			const w = (T - 2) / 3;
+			for (let i = 0; i < 3; i++)
+			{
+				const x0 = X + 1 + i * w;
+				g.fillStyle = "#e4e8ef";
+				g.beginPath();
+				g.moveTo(x0, Y + 16);
+				g.lineTo(x0 + w / 2, Y + 2);
+				g.lineTo(x0 + w, Y + 16);
+				g.fill();
+				g.fillStyle = "#a7afbd";
+				g.beginPath();
+				g.moveTo(x0 + w / 2, Y + 2);
+				g.lineTo(x0 + w, Y + 16);
+				g.lineTo(x0 + w / 2, Y + 16);
+				g.fill();
+			}
+			dot = [X, Y + 14];
+			break;
+		}
+		case "fake":
+		{
+			// A plain block that shimmers now and then, the only hint it is not there.
+			const sh = Math.sin(t * 1.3 + X);
+			g.save();
+			g.globalAlpha = 0.86 + 0.12 * sh;
+			cell(g, X, Y, "#5a67d8", "#8b96ff", "#3b43a3");
+			g.restore();
+			if (sh > 0.97)
+			{
+				g.strokeStyle = "rgba(255,255,255,.7)";
+				g.lineWidth = 2;
+				g.strokeRect(X + 3, Y + 3, T - 6, T - 6);
 			}
 			break;
 		}
@@ -1113,7 +1157,9 @@ export function draw(): void
 	const placingNow = G.phase === "place";
 	if (placingNow) drawGrid();
 	drawLevel(ctx, LV, t);
-	for (const p of G.pieces) drawPiece(ctx, p, t);
+	// Hazards, cannons and spike blocks go over the platforms they share cells with.
+	for (const p of G.pieces) if (!onTop(p.type)) drawPiece(ctx, p, t);
+	for (const p of G.pieces) if (onTop(p.type)) drawPiece(ctx, p, t);
 	ctx.fillStyle = "#22223b";
 	for (const b of sim.world.balls)
 	{

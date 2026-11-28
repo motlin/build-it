@@ -9,6 +9,8 @@ export type PieceType =
 	| "pillar"
 	| "arch"
 	| "beam"
+	| "spikeblock"
+	| "fake"
 	| "big"
 	| "ell"
 	| "spring"

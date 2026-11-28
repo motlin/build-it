@@ -188,6 +188,22 @@ export const DEFS: Record<PieceType, PieceDef> =
 		rots: 2,
 		cells: (r) => (r ? col(3) : row(3)),
 	},
+	spikeblock:
+	{
+		name: "Spike block",
+		tip: "A solid block with spikes on top",
+		kind: "hazard",
+		rots: 1,
+		cells: () => [[0, 0]],
+	},
+	fake:
+	{
+		name: "Fake block",
+		tip: "Looks solid, but you fall right through",
+		kind: "trick",
+		rots: 1,
+		cells: () => [[0, 0]],
+	},
 	big:
 	{
 		name: "Big block",
@@ -425,6 +441,8 @@ export const TYPES: PieceType[] = [
 	"pillar",
 	"arch",
 	"beam",
+	"spikeblock",
+	"fake",
 	"big",
 	"ell",
 	"spring",
@@ -460,8 +478,8 @@ export function rollPiece(): PieceType
 	return t;
 }
 export const pieceCells = (p: Piece): Cell[] => DEFS[p.type].cells(p.rot).map(([x, y]): Cell => [p.c + x, p.r + y]);
-/** Pieces that can share a cell with each other, though not with a copy of themselves in the same spot. */
-export const STACK = new Set<PieceType>([
+/** Pieces that can share a cell with each other, except two of the solid ones. */
+const STACK = new Set<PieceType>([
 	"spikes",
 	"saw",
 	"sawtrack",
@@ -473,7 +491,55 @@ export const STACK = new Set<PieceType>([
 	"crusher",
 	"vine",
 	"mover",
+	"cannon",
+	"spikeblock",
 ]);
+/** The stacking pieces that are solid, so two of them cannot share a cell. */
+const STACK_SOLID = new Set<PieceType>(["cannon", "spikeblock"]);
+/** Hazards that can go over (or under) the pieces in OVERABLE, as a trap on a platform. */
+const HAZ_OVER = new Set<PieceType>([
+	"spikes",
+	"saw",
+	"sawtrack",
+	"laser",
+	"firebar",
+	"firetrack",
+	"axe",
+	"popspikes",
+	"crusher",
+]);
+/** Platforms that a hazard, a cannon or a spike block can share a cell with. */
+const OVERABLE = new Set<PieceType>([
+	"beam",
+	"block",
+	"plank",
+	"big",
+	"ell",
+	"bridge",
+	"tee",
+	"zig",
+	"stairs",
+	"pillar",
+	"arch",
+	"ice",
+	"belt",
+	"crumble",
+	"jelly",
+	"blink",
+	"cloud",
+	"spring",
+	"booster",
+	"fan",
+	"fake",
+]);
+/** Whether a hazard, cannon or spike block goes over the other piece, which is drawn underneath. */
+export const onTop = (t: PieceType): boolean => HAZ_OVER.has(t) || STACK_SOLID.has(t);
+/** Whether pieces of types a and b may share a cell. */
+export function canShare(a: PieceType, b: PieceType): boolean
+{
+	if ((onTop(a) && OVERABLE.has(b)) || (OVERABLE.has(a) && onTop(b))) return true;
+	return STACK.has(a) && STACK.has(b) && !(STACK_SOLID.has(a) && STACK_SOLID.has(b));
+}
 /** The plain solid pieces, which the route checker stands on. */
 export const SOLIDT = new Set<PieceType>([
 	"block",

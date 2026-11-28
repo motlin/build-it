@@ -1,5 +1,5 @@
 import {COLS, ROWS, T} from "./geometry.ts";
-import {isBomb, pieceCells, STACK} from "./pieces.ts";
+import {canShare, isBomb, pieceCells} from "./pieces.ts";
 import {course} from "./state.ts";
 import type {Level, Piece, Rect} from "./types.ts";
 
@@ -64,14 +64,11 @@ export function valid(p: Piece, list: Piece[]): boolean
 	for (const [c, r] of cs) if (c < 0 || r < 0 || c >= COLS || r >= ROWS) return false;
 	if (isBomb(p.type)) return true;
 	const o = occupied(list);
-	const st = STACK.has(p.type);
 	for (const [c, r] of cs)
 	{
 		const k = c + "," + r;
 		if (course.base.has(k) || course.safe.has(k)) return false;
-		const here = o.get(k);
-		if (here && (!st || here.some((q) => !STACK.has(q.type) || (q.type === p.type && q.c === p.c && q.r === p.r))))
-			return false;
+		if (o.get(k)?.some((q) => !canShare(p.type, q.type))) return false;
 	}
 	return true;
 }

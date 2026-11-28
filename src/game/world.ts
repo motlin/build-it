@@ -108,6 +108,29 @@ export function buildWorld(): void
 							},
 				);
 				break;
+			case "spikeblock":
+				w.solids.push(
+					{
+						x: X,
+						y: Y + 16,
+						w: T,
+						h: T - 16,
+						k: "block",
+						t0,
+					},
+				);
+				w.hazards.push(
+					{
+						t: "rect",
+						x: X + 4,
+						y: Y + 3,
+						w: T - 8,
+						h: 13,
+						owner: p.owner,
+						cause: "spiked",
+					},
+				);
+				break;
 			case "ice":
 				w.solids.push(
 					{
@@ -525,6 +548,8 @@ export function buildWorld(): void
 				w.cannons.push(o);
 				break;
 			}
+			// A fake block looks solid but is not there at all.
+			case "fake":
 			case "bomb":
 				break;
 		}

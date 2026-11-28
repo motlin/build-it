@@ -6,7 +6,7 @@ import {newRunner, stepRun} from "../../src/game/physics.ts";
 import {DEFS, pieceCells, TYPES} from "../../src/game/pieces.ts";
 import {explore, genCourse} from "../../src/game/solver.ts";
 import {course, game, sim} from "../../src/game/state.ts";
-import type {Piece, Run, Runner} from "../../src/game/types.ts";
+import type {Piece, PieceType, Run, Runner} from "../../src/game/types.ts";
 import {buildWorld, updateWorld} from "../../src/game/world.ts";
 
 afterEach(() => vi.restoreAllMocks());
@@ -112,6 +112,8 @@ it("lists every piece once, with the cells each rotation covers", () =>
 			pillar: ["#/#/#/#", "####"],
 			arch: ["###/#.#", "#.#/###"],
 			beam: ["###", "#/#/#"],
+			spikeblock: ["#"],
+			fake: ["#"],
 			big: ["##/##"],
 			ell: ["#./##", "##/#.", "##/.#", ".#/##"],
 			spring: ["#"],
@@ -166,6 +168,16 @@ const plank = (c: number, r: number, rot = 0): Piece => (
 	owner: 0,
 });
 
+// A piece of the given type at column 6, row 10, owned by player 0.
+const at610 = (type: PieceType, rot = 0): Piece => (
+{
+	type,
+	c: 6,
+	r: 10,
+	rot,
+	owner: 0,
+});
+
 it("places a piece only on open cells inside the course, away from the start and flag", () =>
 {
 	setLevel(LEVELS[0]!);
@@ -214,6 +226,13 @@ it("places a piece only on open cells inside the course, away from the start and
 					},
 				],
 			),
+
+			spikesOverPlank: valid(at610("spikes"), [plank(6, 10)]),
+			plankUnderSpikes: valid(plank(6, 10), [at610("spikes")]),
+			spikeBlockOnPlank: valid(at610("spikeblock"), [plank(6, 10)]),
+			cannonOnSaw: valid(at610("cannon"), [at610("saw")]),
+			cannonOnSpikeBlock: valid(at610("cannon"), [at610("spikeblock")]),
+			plankOnPlank: valid(plank(6, 10), [plank(6, 10)]),
 		},
 	).toStrictEqual(
 		{
@@ -223,8 +242,14 @@ it("places a piece only on open cells inside the course, away from the start and
 			inTheGround: false,
 			besideTheStart: false,
 			besideTheFlag: false,
-			sawOnSaw: false,
+			sawOnSaw: true,
 			sawOnSpikes: true,
+			spikesOverPlank: true,
+			plankUnderSpikes: true,
+			spikeBlockOnPlank: true,
+			cannonOnSaw: true,
+			cannonOnSpikeBlock: false,
+			plankOnPlank: false,
 		},
 	);
 });
@@ -600,6 +625,57 @@ it("crouches under a low beam it cannot walk through, and stays crouched until t
 				y: 504,
 				h: 16,
 				crouch: true,
+			},
+		},
+	);
+});
+
+// How a run dropped from above a piece at column 5, row 12, owned by player 1, ends.
+function fall(type: PieceType): Run["res"]
+{
+	const run = startRun(
+		[
+			{
+				type,
+				c: 5,
+				r: 12,
+				rot: 0,
+				owner: 1,
+			},
+		],
+		{
+			x: 205,
+			y: 400,
+		},
+	);
+	stepUntil(run, () => false);
+	return run.res;
+}
+
+it("drops straight through a fake block, and is spiked landing on a spike block", () =>
+{
+	expect(
+		{
+			fake: fall("fake"),
+			spikeblock: fall("spikeblock"),
+		},
+	).toStrictEqual(
+		{
+			fake:
+			{
+				finished: false,
+				owner: -1,
+				cause: "fell",
+				x: 220,
+				y: 696,
+			},
+			spikeblock:
+			{
+				finished: false,
+				owner: 1,
+				cause: "spiked",
+				x: 220,
+				y: 471.0625,
 			},
 		},
 	);
