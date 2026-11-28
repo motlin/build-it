@@ -112,6 +112,8 @@ export interface Solid extends Rect
 	oneway?: boolean;
 	/** Which way a belt or booster pushes. */
 	dir?: number;
+	/** Which way a conveyor stood on end carries a runner beside it: up (-1) or down (1). */
+	vdir?: number;
 	anim?: number;
 	warn?: boolean;
 }

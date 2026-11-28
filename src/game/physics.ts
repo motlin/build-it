@@ -215,6 +215,25 @@ export function stepRun(dt: number): void
 	}
 	if (p.jumping && !keys.j && p.vy < -260) p.vy = -260;
 	if (p.vy >= 0) p.jumping = false;
+	for (const s of world.solids)
+		if (
+			s.vdir &&
+			!s.off &&
+			hit(
+				p,
+				{
+					x: s.x - 2,
+					y: s.y,
+					w: s.w + 4,
+					h: s.h,
+				},
+			) &&
+			p.y + p.h > s.y + 2
+		)
+		{
+			if (s.vdir < 0) p.vy = Math.min(p.vy, -230);
+			else p.vy = Math.max(p.vy, 240);
+		}
 	let wind = 0;
 	for (const f of world.fans)
 		if (hit(p, f.zone))

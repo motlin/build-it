@@ -85,8 +85,8 @@ export function buildWorld(): void
 					{
 						x: X,
 						y: Y,
-						w: 3 * T,
-						h: T,
+						w: (p.rot ? 1 : 3) * T,
+						h: (p.rot ? 3 : 1) * T,
 						k: "ice",
 						t0,
 					},
@@ -94,15 +94,28 @@ export function buildWorld(): void
 				break;
 			case "belt":
 				w.solids.push(
-					{
-						x: X,
-						y: Y + 4,
-						w: 3 * T,
-						h: T - 4,
-						k: "belt",
-						dir: p.rot ? -1 : 1,
-						t0,
-					},
+					p.rot > 1
+						?
+							{
+								x: X + 4,
+								y: Y,
+								w: T - 8,
+								h: 3 * T,
+								k: "belt",
+								dir: 0,
+								vdir: p.rot === 2 ? -1 : 1,
+								t0,
+							}
+						:
+							{
+								x: X,
+								y: Y + 4,
+								w: 3 * T,
+								h: T - 4,
+								k: "belt",
+								dir: p.rot ? -1 : 1,
+								t0,
+							},
 				);
 				break;
 			case "spring":
@@ -355,17 +368,19 @@ export function buildWorld(): void
 				);
 				break;
 			case "cloud":
-				w.solids.push(
-					{
-						x: X,
-						y: Y,
-						w: 3 * T,
-						h: T * 0.6,
-						k: "cloud",
-						oneway: true,
-						t0,
-					},
-				);
+				// Stood up, it is a ladder of three one-tile clouds.
+				for (let k = 0; k < (p.rot ? 3 : 1); k++)
+					w.solids.push(
+						{
+							x: X,
+							y: Y + k * T,
+							w: (p.rot ? 1 : 3) * T,
+							h: T * 0.6,
+							k: "cloud",
+							oneway: true,
+							t0,
+						},
+					);
 				break;
 			case "vine":
 				w.vines.push(

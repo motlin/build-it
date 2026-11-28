@@ -104,6 +104,44 @@ function cell(g: CanvasRenderingContext2D, x: number, y: number, c: string, hi: 
 /** Draws a piece at time t, with its moving parts where the world has them, or at rest for a ghost or thumbnail. */
 function drawPiece(g: CanvasRenderingContext2D, p: Piece, t: number): void
 {
+	// Stood-up ice and conveyors are the lying-down ones turned a quarter turn.
+	if ((p.type === "ice" && p.rot === 1) || (p.type === "belt" && p.rot > 1))
+	{
+		g.save();
+		g.translate(p.c * T + T, p.r * T);
+		g.rotate(Math.PI / 2);
+		drawPiece(
+			g,
+			{
+				...p,
+				c: 0,
+				r: 0,
+				rot: p.type === "belt" && p.rot === 2 ? 1 : 0,
+			},
+			t,
+		);
+		g.restore();
+		return;
+	}
+	if (p.type === "cloud" && p.rot === 1)
+	{
+		for (let k = 0; k < 3; k++)
+		{
+			const X = p.c * T;
+			const Y = p.r * T + k * T;
+			g.fillStyle = "rgba(200,225,240,.9)";
+			g.beginPath();
+			g.ellipse(X + T / 2, Y + 16, T * 0.55, 9, 0, 0, 7);
+			g.fill();
+			g.fillStyle = "#fff";
+			g.beginPath();
+			g.ellipse(X + 12, Y + 11, 11, 9, 0, 0, 7);
+			g.ellipse(X + T / 2 + 2, Y + 7, 13, 11, 0, 0, 7);
+			g.ellipse(X + T - 11, Y + 11, 10, 8, 0, 0, 7);
+			g.fill();
+		}
+		return;
+	}
 	const o = p.parts ?? {};
 	const X = p.c * T;
 	const Y = p.r * T;

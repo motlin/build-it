@@ -120,16 +120,16 @@ export const DEFS: Record<PieceType, PieceDef> =
 		name: "Ice",
 		tip: "Slippery, hard to stop on",
 		kind: "trick",
-		rots: 1,
-		cells: () => row(3),
+		rots: 2,
+		cells: (r) => (r ? col(3) : row(3)),
 	},
 	belt:
 	{
 		name: "Conveyor",
-		tip: "Carries you along",
+		tip: "Carries you along. Stand it up to make a wall that carries you up or down",
 		kind: "trick",
-		rots: 2,
-		cells: () => row(3),
+		rots: 4,
+		cells: (r) => (r > 1 ? col(3) : row(3)),
 	},
 	crumble:
 	{
@@ -207,10 +207,10 @@ export const DEFS: Record<PieceType, PieceDef> =
 	cloud:
 	{
 		name: "Cloud",
-		tip: "Jump up through it, land on top",
+		tip: "Jump up through it, land on top. Stand it up for a cloud ladder",
 		kind: "help",
-		rots: 1,
-		cells: () => row(3),
+		rots: 2,
+		cells: (r) => (r ? col(3) : row(3)),
 	},
 	vine:
 	{

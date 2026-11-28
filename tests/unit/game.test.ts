@@ -6,20 +6,13 @@ import {newRunner, stepRun} from "../../src/game/physics.ts";
 import {DEFS, pieceCells, TYPES} from "../../src/game/pieces.ts";
 import {explore, genCourse} from "../../src/game/solver.ts";
 import {course, game, sim} from "../../src/game/state.ts";
-import type {Piece, Run} from "../../src/game/types.ts";
+import type {Piece, Run, Runner} from "../../src/game/types.ts";
 import {buildWorld, updateWorld} from "../../src/game/world.ts";
 
 afterEach(() => vi.restoreAllMocks());
 
-// Puts a run on the first level, The Gap, with the given pieces, from the start or from (x, y), and returns it.
-function startRun(
-	pieces: Piece[],
-	at?:
-	{
-		x: number;
-		y: number;
-	},
-): Run
+// Puts a run on the first level, The Gap, with the given pieces, from the start or changed by `at`, and returns it.
+function startRun(pieces: Piece[], at?: Partial<Runner>): Run
 {
 	setLevel(LEVELS[0]!);
 	game.players = [
@@ -116,8 +109,8 @@ it("lists every piece once, with the cells each rotation covers", () =>
 			ell: ["#./##", "##/#.", "##/.#", ".#/##"],
 			spring: ["#"],
 			mover: ["#####", "##/##/##/##"],
-			ice: ["###"],
-			belt: ["###", "###"],
+			ice: ["###", "#/#/#"],
+			belt: ["###", "###", "#/#/#", "#/#/#"],
 			crumble: ["##"],
 			spikes: ["##", "#/#", "##", "#/#"],
 			saw: ["#"],
@@ -127,7 +120,7 @@ it("lists every piece once, with the cells each rotation covers", () =>
 			sawtrack: ["####", "#/#/#/#"],
 			laser: ["#/#/#", "###"],
 			bridge: ["#####", "#/#/#/#/#"],
-			cloud: ["###"],
+			cloud: ["###", "#/#/#"],
 			vine: ["#/#/#/#"],
 			jelly: ["##"],
 			popspikes: ["##"],
@@ -481,6 +474,64 @@ it("fires a cannon ball out through the block its muzzle is in, and stops it at 
 			firstShot: 59,
 			lastFlying: 90,
 			flyingNow: 0,
+		},
+	);
+});
+
+// Where a runner pressed against the right side of a conveyor at column 5 is, and how fast, after some steps.
+function beside(
+	rot: number,
+	vy: number,
+	steps: number,
+):
+{
+	y: number;
+	vy: number;
+}
+{
+	const run = startRun(
+		[
+			{
+				type: "belt",
+				c: 5,
+				r: 8,
+				rot,
+				owner: -1,
+			},
+		],
+		{
+			x: 236,
+			y: 380,
+			vy,
+		},
+	);
+	sim.keys.l = 1;
+	for (let i = 0; i < steps; i++) stepRun(STEP);
+	return {
+		y: run.p.y,
+		vy: run.p.vy,
+	};
+}
+
+it("rides a conveyor stood on end up its side, and is pulled down beside one turned the other way", () =>
+{
+	expect(
+		{
+			up: beside(2, 0, 20),
+			down: beside(3, -780, 1),
+		},
+	).toStrictEqual(
+		{
+			up:
+			{
+				y: 344.86111111111086,
+				vy: -210.83333333333334,
+			},
+			down:
+			{
+				y: 382.15972222222223,
+				vy: 259.1666666666667,
+			},
 		},
 	);
 });
