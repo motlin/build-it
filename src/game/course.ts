@@ -1,7 +1,7 @@
 import {COLS, ROWS, T} from "./geometry.ts";
 import {canShare, isBomb, pieceCells} from "./pieces.ts";
-import {course} from "./state.ts";
-import type {Level, Piece, Rect} from "./types.ts";
+import {course, game} from "./state.ts";
+import type {Level, Piece, PieceType, Rect} from "./types.ts";
 
 // The level in play and where pieces may go on it.
 
@@ -55,6 +55,23 @@ function occupied(list: Piece[]): Map<string, Piece[]>
 			o.get(k)!.push(p);
 		}
 	return o;
+}
+
+/** The pieces a held piece of this type must fit among: the course's, plus a portal entrance waiting for its exit. */
+export function placeAmong(type: PieceType): Piece[]
+{
+	const a = game.portalA;
+	if (type !== "portal" || !a) return game.pieces;
+	return [
+		...game.pieces,
+		{
+			type: "portal",
+			c: a.c,
+			r: a.r,
+			rot: 0,
+			owner: -1,
+		},
+	];
 }
 
 /** Whether a piece fits among the others: on the course, off the ground and the clear cells, and not overlapping. */

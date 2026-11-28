@@ -108,6 +108,23 @@ export function buildWorld(): void
 							},
 				);
 				break;
+			case "portal":
+				if (p.b)
+					w.portals.push(
+						{
+							a:
+							{
+								x: X,
+								y: Y,
+							},
+							b:
+							{
+								x: p.b.c * T,
+								y: p.b.r * T,
+							},
+						},
+					);
+				break;
 			case "spikeblock":
 				w.solids.push(
 					{

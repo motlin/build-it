@@ -1,4 +1,4 @@
-import {valid} from "./course.ts";
+import {placeAmong, valid} from "./course.ts";
 import {COLS, DIRV, rand, ROWS, STEP, T} from "./geometry.ts";
 import {DEFS, pieceCells, SOLIDT} from "./pieces.ts";
 import {die, stepRun} from "./physics.ts";
@@ -49,7 +49,7 @@ export function cpuPlacement(type: PieceType): Piece | null
 			rot: rand(d.rots),
 			owner: who,
 		};
-		if (valid(q, game.pieces)) cands.push(q);
+		if (valid(q, placeAmong(type))) cands.push(q);
 	}
 	if (!cands.length) return null;
 	if (game.skill === 0 && Math.random() < 0.4) return cands[0]!;

@@ -1,4 +1,4 @@
-import {valid} from "./course.ts";
+import {placeAmong, valid} from "./course.ts";
 import {COLS, DIRV, H, ROWS, T, W} from "./geometry.ts";
 import {DEFS, isBomb, onTop, pieceCells} from "./pieces.ts";
 import {course, game, placing, sim} from "./state.ts";
@@ -60,6 +60,42 @@ function drawBomb(g: CanvasRenderingContext2D, cx: number, cy: number, k: number
 	g.beginPath();
 	g.arc(15, -38, 4 + Math.sin(t * 20) * 1.5, 0, 7);
 	g.fill();
+	g.restore();
+}
+
+/** A swirling portal two tiles high with its top left at (x, y), labeled while placing. */
+function drawPortal(g: CanvasRenderingContext2D, x: number, y: number, t: number, lab: string): void
+{
+	const cx = x + T / 2;
+	const cy = y + T;
+	g.save();
+	g.fillStyle = "rgba(123,44,191,.35)";
+	g.beginPath();
+	g.ellipse(cx, cy, T * 0.48, T * 0.98, 0, 0, 7);
+	g.fill();
+	g.strokeStyle = "#c77dff";
+	g.lineWidth = 5;
+	g.beginPath();
+	g.ellipse(cx, cy, T * 0.42, T * 0.9, 0, 0, 7);
+	g.stroke();
+	g.strokeStyle = "rgba(255,255,255,.75)";
+	g.lineWidth = 2;
+	for (let k = 0; k < 3; k++)
+	{
+		const ph = (t * 1.2 + k / 3) % 1;
+		g.globalAlpha = 1 - ph;
+		g.beginPath();
+		g.ellipse(cx, cy, T * 0.4 * (1 - ph), T * 0.86 * (1 - ph), 0, 0, 7);
+		g.stroke();
+	}
+	g.globalAlpha = 1;
+	if (lab)
+	{
+		g.fillStyle = "#fff";
+		g.font = "700 13px Fredoka,system-ui";
+		g.textAlign = "center";
+		g.fillText(lab, cx, y - 4);
+	}
 	g.restore();
 }
 
@@ -420,6 +456,28 @@ function drawPiece(g: CanvasRenderingContext2D, p: Piece, t: number): void
 				g.restore();
 			}
 			break;
+		case "portal":
+		{
+			const placingNow = game.phase === "place";
+			drawPortal(g, X, Y, t, p.b && placingNow ? "in" : "");
+			if (p.b)
+			{
+				drawPortal(g, p.b.c * T, p.b.r * T, t, placingNow ? "out" : "");
+				if (placingNow)
+				{
+					g.save();
+					g.strokeStyle = "rgba(199,125,255,.5)";
+					g.setLineDash([6, 8]);
+					g.lineWidth = 2;
+					g.beginPath();
+					g.moveTo(X + T / 2, Y + T);
+					g.lineTo(p.b.c * T + T / 2, p.b.r * T + T);
+					g.stroke();
+					g.restore();
+				}
+			}
+			break;
+		}
 		case "saw":
 			drawSaw(g, X + T / 2, Y + T / 2, t);
 			break;
@@ -1285,10 +1343,17 @@ export function draw(): void
 							rot: G.rot,
 							owner: -1,
 						},
-						G.pieces,
+						placeAmong(held()),
 					),
 				}
 			: placing.ghost;
+	if (placingNow && G.portalA)
+	{
+		ctx.save();
+		ctx.globalAlpha = 0.85;
+		drawPortal(ctx, G.portalA.c * T, G.portalA.r * T, t, "entrance");
+		ctx.restore();
+	}
 	if (placingNow && gh)
 	{
 		const pl = G.order[G.turn]!;

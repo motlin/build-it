@@ -1,5 +1,5 @@
 import {afterEach, expect, it, vi} from "vite-plus/test";
-import {setLevel, valid} from "../../src/game/course.ts";
+import {placeAmong, setLevel, valid} from "../../src/game/course.ts";
 import {STEP} from "../../src/game/geometry.ts";
 import {LEVELS} from "../../src/game/levels.ts";
 import {newRunner, stepRun} from "../../src/game/physics.ts";
@@ -125,6 +125,7 @@ it("lists every piece once, with the cells each rotation covers", () =>
 			saw: ["#"],
 			cannon: ["#", "#", "#", "#"],
 			firebar: ["#", "#"],
+			portal: ["#/#"],
 			firetrack: ["####", "#/#/#/#"],
 			sawtrack: ["####", "#/#/#/#"],
 			laser: ["#/#/#", "###"],
@@ -156,6 +157,28 @@ it("lists every piece once, with the cells each rotation covers", () =>
 		[5, 8],
 		[6, 8],
 	]);
+	// A placed portal covers its entrance and its exit.
+	expect(
+		pieceCells(
+			{
+				type: "portal",
+				c: 5,
+				r: 7,
+				rot: 0,
+				owner: 0,
+				b:
+				{
+					c: 20,
+					r: 3,
+				},
+			},
+		),
+	).toStrictEqual([
+		[5, 7],
+		[5, 8],
+		[20, 3],
+		[20, 4],
+	]);
 });
 
 // A plank owned by player 0.
@@ -181,6 +204,12 @@ const at610 = (type: PieceType, rot = 0): Piece => (
 it("places a piece only on open cells inside the course, away from the start and flag", () =>
 {
 	setLevel(LEVELS[0]!);
+	game.pieces = [];
+	game.portalA =
+	{
+		c: 6,
+		r: 11,
+	};
 	const blocked = [plank(5, 10)];
 	expect(
 		{
@@ -233,6 +262,8 @@ it("places a piece only on open cells inside the course, away from the start and
 			cannonOnSaw: valid(at610("cannon"), [at610("saw")]),
 			cannonOnSpikeBlock: valid(at610("cannon"), [at610("spikeblock")]),
 			plankOnPlank: valid(plank(6, 10), [plank(6, 10)]),
+			portalExitOnItsEntrance: valid(at610("portal"), placeAmong("portal")),
+			plankOnAPendingEntrance: valid(plank(6, 11), placeAmong("plank")),
 		},
 	).toStrictEqual(
 		{
@@ -250,8 +281,11 @@ it("places a piece only on open cells inside the course, away from the start and
 			cannonOnSaw: true,
 			cannonOnSpikeBlock: false,
 			plankOnPlank: false,
+			portalExitOnItsEntrance: false,
+			plankOnAPendingEntrance: true,
 		},
 	);
+	game.portalA = null;
 });
 
 it("puts every level's start and flag on its ground, inside the course", () =>
@@ -348,6 +382,7 @@ it("falls under gravity onto a block and stands on it", () =>
 				boost: 0,
 				crouch: false,
 				dropT: 0,
+				plock: null,
 			},
 			state: "go",
 		},
@@ -677,6 +712,45 @@ it("drops straight through a fake block, and is spiked landing on a spike block"
 				x: 220,
 				y: 471.0625,
 			},
+		},
+	);
+});
+
+it("steps into a portal's entrance and pops out of its exit", () =>
+{
+	const portal: Piece =
+	{
+		type: "portal",
+		c: 3,
+		r: 11,
+		rot: 0,
+		owner: 0,
+		b:
+		{
+			c: 20,
+			r: 5,
+		},
+	};
+	const run = startRun(
+		[portal],
+		{
+			x: 85,
+			y: 490,
+		},
+	);
+	sim.keys.r = 1;
+	stepUntil(run, () => run.p.plock !== null);
+	expect(
+		{
+			x: run.p.x,
+			y: run.p.y,
+			plock: run.p.plock,
+		},
+	).toStrictEqual(
+		{
+			x: 805,
+			y: 249,
+			plock: sim.world.portals[0],
 		},
 	);
 });

@@ -309,6 +309,14 @@ export const DEFS: Record<PieceType, PieceDef> =
 		rots: 2,
 		cells: () => [[0, 0]],
 	},
+	portal:
+	{
+		name: "Portal",
+		tip: "Place an entrance, then an exit. Step in one, pop out the other",
+		kind: "help",
+		rots: 1,
+		cells: () => col(2),
+	},
 	firetrack:
 	{
 		name: "Fire track",
@@ -454,6 +462,7 @@ export const TYPES: PieceType[] = [
 	"saw",
 	"cannon",
 	"firebar",
+	"portal",
 	"firetrack",
 	"sawtrack",
 	"laser",
@@ -470,14 +479,21 @@ export const TYPES: PieceType[] = [
 	"bomb",
 ];
 const POOL = TYPES.filter((t) => t !== "bomb");
-/** A random piece for the box. Rare pieces get a second roll that usually replaces them. */
+/** A random piece for the box: a portal one time in ten, and rare pieces get a second roll that usually replaces them. */
 export function rollPiece(): PieceType
 {
+	if (Math.random() < 0.1) return "portal";
 	let t = POOL[rand(POOL.length)]!;
 	if (DEFS[t].rare && Math.random() < 0.7) t = POOL[rand(POOL.length)]!;
 	return t;
 }
-export const pieceCells = (p: Piece): Cell[] => DEFS[p.type].cells(p.rot).map(([x, y]): Cell => [p.c + x, p.r + y]);
+/** The cells a piece covers on the course, including a placed portal's exit. */
+export function pieceCells(p: Piece): Cell[]
+{
+	const a = DEFS[p.type].cells(p.rot).map(([x, y]): Cell => [p.c + x, p.r + y]);
+	if (p.type === "portal" && p.b) a.push([p.b.c, p.b.r], [p.b.c, p.b.r + 1]);
+	return a;
+}
 /** Pieces that can share a cell with each other, except two of the solid ones. */
 const STACK = new Set<PieceType>([
 	"spikes",

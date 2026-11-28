@@ -24,6 +24,21 @@ async function placeAt(page: Page, c: number, r: number, w: number, h: number): 
 	await page.mouse.click(...(await at(page, c + w / 2, r + h / 2)));
 }
 
+// Drags the held piece from the tray onto the course at column c, row r.
+async function dragHoldTo(page: Page, c: number, r: number): Promise<void>
+{
+	const hold = (await page.locator("#hold").boundingBox())!;
+	await page.mouse.move(hold.x + hold.width / 2, hold.y + hold.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(
+		...(await at(page, c, r)),
+		{
+			steps: 5,
+		},
+	);
+	await page.mouse.up();
+}
+
 test("solo practice: bridge The Gap, run and jump to the flag, then switch levels", async ({page}) =>
 {
 	const errors = await open(page);
@@ -89,21 +104,18 @@ test("a 2-player round: vote, pick, toggle the sound, place or discard, give up 
 	await page.locator("#mute").click();
 	await expect(page.locator("#mute")).toHaveText("Sound on");
 
-	// Red drags the piece from the tray to the middle of the open sky and confirms; Sunny discards.
-	await expect(page.locator("#tray .msg")).toContainText("Red, drag your");
-	const hold = (await page.locator("#hold").boundingBox())!;
-	await page.mouse.move(hold.x + hold.width / 2, hold.y + hold.height / 2);
-	await page.mouse.down();
-	await page.mouse.move(
-		...(await at(page, 16, 5)),
-		{
-			steps: 5,
-		},
-	);
-	await page.mouse.up();
+	// Red drags the piece from the tray to the middle of the open sky and confirms; Sunny discards. A portal goes down
+	// in two steps, its entrance and then its exit.
+	await expect(page.locator("#tray .msg")).toContainText(/Red, (drag your|place the portal entrance)/);
+	await dragHoldTo(page, 16, 5);
 	await expect(page.locator("#tray .msg")).toContainText("Red, place your");
 	await page.locator("#okPlace").click();
-	await expect(page.locator("#tray .msg")).toContainText("Sunny, drag your");
+	if ((await page.locator("#tray .msg").textContent())!.includes("portal exit"))
+	{
+		await dragHoldTo(page, 20, 5);
+		await page.locator("#okPlace").click();
+	}
+	await expect(page.locator("#tray .msg")).toContainText(/Sunny, (drag your|place the portal entrance)/);
 	await page.locator("#skipBtn").click();
 	await expect(page.locator("#skipBtn")).toHaveText("Tap again to discard");
 	await page.locator("#skipBtn").click();

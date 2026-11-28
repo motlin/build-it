@@ -1,4 +1,4 @@
-import {setLevel, valid} from "./course.ts";
+import {placeAmong, setLevel, valid} from "./course.ts";
 import {cpuChoosePick, cpuInitRun, cpuPlacement, cpuPlanFrame} from "./cpu.ts";
 import {$, $canvas, buttonOf, canvases, esc} from "./dom.ts";
 import {drawLevelThumb, drawThumb} from "./draw.ts";
@@ -120,6 +120,7 @@ function renderSetup(): void
   <li>If two or more players reach the winning score in the same round, the one with the <b>fastest run</b> that round wins.</li>
   <li>If nobody makes it, nobody scores. Keep building and try again next round.</li>
   <li>The course starts empty. You build it as you go.</li>
+  <li><b>Portals</b> send you from one spot to another, toward the flag or far away from it.</li>
   <li>Short on players? Switch any player to <b>CPU</b> and the computer plays for them.</li></ul>
   <button class="pri big" id="startBtn">${n === 1 ? "Start practice" : "Start game"}</button></div>`;
 	ov().classList.add("show");
@@ -350,6 +351,13 @@ export function cpuTick(now: number): void
 	}
 	if (G.phase === "place")
 	{
+		// A pause between a portal's entrance and its exit.
+		if (cpuStage === 2)
+		{
+			cpuStage = 0;
+			cpuT = now + 500;
+			return;
+		}
 		if (cpuStage === 0)
 		{
 			const q = cpuPlacement(held());
@@ -369,7 +377,12 @@ export function cpuTick(now: number): void
 			cpuStage = 1;
 			cpuT = now + 900;
 		}
-		else confirmPlace();
+		else
+		{
+			confirmPlace();
+			// A portal entrance still waiting means the same turn goes on, to place its exit.
+			if (G.portalA) cpuStage = 2;
+		}
 	}
 }
 
@@ -556,7 +569,7 @@ export function renderTray(): void
 		const d = DEFS[t];
 		const best = G.best[course.level.name];
 		tray().innerHTML = `<div class="pal">${TYPES.map((k) => `<button class="${k === t ? "on" : ""}" data-sel="${k}" title="${DEFS[k].name}" aria-label="${DEFS[k].name}"><canvas width="112" height="64" data-t="${k}"></canvas></button>`).join("")}</div>
-    <canvas id="hold" width="240" height="128" title="Drag onto the course"></canvas><div class="msg">${G.lastMsg ? `<b>${esc(G.lastMsg)}</b> ` : ""}Holding <b>${d.name}</b>: ${d.tip}.<small>Drag or click to place as many as you like. ${d.rots > 1 ? "R to rotate. " : ""}P or Enter to play, Esc to stop a run.${best ? ` Best on ${course.level.name}: ${best.toFixed(2)}s.` : ""}</small></div>
+    <canvas id="hold" width="240" height="128" title="Drag onto the course"></canvas><div class="msg">${G.lastMsg ? `<b>${esc(G.lastMsg)}</b> ` : ""}Holding <b>${d.name}</b>: ${t === "portal" && G.portalA ? "now place the exit" : d.tip}.<small>Drag or click to place as many as you like. ${d.rots > 1 ? "R to rotate. " : ""}P or Enter to play, Esc to stop a run.${best ? ` Best on ${course.level.name}: ${best.toFixed(2)}s.` : ""}</small></div>
     <div class="btns">${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button class="pri" id="playBtn">Play</button><button id="undoBtn" ${G.hist.length ? "" : "disabled"}>Undo</button><button id="randBtn">Surprise me</button><button id="clearBtn">Clear</button><button id="lvlBtn">Change level</button><button id="menuBtn">Menu</button></div>`;
 		for (const c of canvases(tray(), "canvas[data-t]")) drawThumb(c, pieceTypeOf(c), 0);
 		drawThumb($canvas("hold"), t, G.rot);
@@ -575,13 +588,14 @@ export function renderTray(): void
 			renderHUD();
 			return;
 		}
+		const what = held() === "portal" ? (G.portalA ? "portal exit" : "portal entrance") : d.name;
 		if (placing.pend)
 		{
-			tray().innerHTML = `<div class="msg">${chipOf(pi)}, place your <b>${d.name}</b> here?<small>Enter to confirm, Esc to move it. You can also click another spot${d.rots > 1 ? " or rotate it" : ""}.</small></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="movePlace">Move it</button><button class="pri" id="okPlace">Confirm</button>`;
+			tray().innerHTML = `<div class="msg">${chipOf(pi)}, place your <b>${what}</b> here?<small>Enter to confirm, Esc to move it. You can also click another spot${d.rots > 1 ? " or rotate it" : ""}.</small></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="movePlace">Move it</button><button class="pri" id="okPlace">Confirm</button>`;
 			renderHUD();
 			return;
 		}
-		tray().innerHTML = `<canvas id="hold" width="240" height="128" title="Drag onto the course"></canvas><div class="msg">${chipOf(pi)}, drag your <b>${d.name}</b> onto the course.<small>Or hover the course and click. ${d.rots > 1 ? "R, right-click or scroll to rotate." : ""} Green outline means it fits. You'll confirm before it's placed.</small></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="skipBtn">${placing.discardArm ? "Tap again to discard" : "Discard piece"}</button>`;
+		tray().innerHTML = `<canvas id="hold" width="240" height="128" title="Drag onto the course"></canvas><div class="msg">${chipOf(pi)}, ${held() === "portal" ? (G.portalA ? "now place the <b>portal exit</b>." : "place the <b>portal entrance</b> first, then its exit.") : `drag your <b>${d.name}</b> onto the course.`}<small>Or hover the course and click. ${d.rots > 1 ? "R, right-click or scroll to rotate." : ""} Green outline means it fits. You'll confirm before it's placed.</small></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="skipBtn">${placing.discardArm ? "Tap again to discard" : "Discard piece"}</button>`;
 		drawThumb($canvas("hold"), held(), G.rot);
 		bindHold();
 	}
@@ -620,6 +634,7 @@ function onTrayClick(e: MouseEvent): void
 	{
 		G.picks[0] = sel;
 		G.rot = 0;
+		G.portalA = null;
 		renderTray();
 	}
 	else if (b.id === "playBtn") practicePlay();
@@ -677,7 +692,7 @@ function setGhost(c: number, r: number): void
 				rot: G.rot,
 				owner: -1,
 			},
-			G.pieces,
+			placeAmong(held()),
 		),
 	};
 }
@@ -740,7 +755,7 @@ export function confirmPlace(): void
 				rot: G.rot,
 				owner: -1,
 			},
-			G.pieces,
+			placeAmong(held()),
 		),
 	};
 	if (!placing.ghost.ok)
@@ -765,6 +780,31 @@ function doPlace(): void
 		rot: G.rot,
 		owner: G.solo ? -1 : pi,
 	};
+	// A portal goes down in two steps: its entrance waits in portalA until its exit is placed.
+	if (p.type === "portal")
+	{
+		const a = G.portalA;
+		if (!a)
+		{
+			G.portalA =
+			{
+				c: p.c,
+				r: p.r,
+			};
+			placing.ghost = null;
+			sfx("gate");
+			renderTray();
+			return;
+		}
+		p.b =
+		{
+			c: p.c,
+			r: p.r,
+		};
+		p.c = a.c;
+		p.r = a.r;
+		G.portalA = null;
+	}
 	if (G.solo) G.hist.push(G.pieces.slice());
 	if (isBomb(p.type))
 	{
@@ -797,6 +837,7 @@ function advancePlace(): void
 	placing.ghost = null;
 	placing.pend = null;
 	placing.discardArm = false;
+	G.portalA = null;
 	G.turn++;
 	G.rot = 0;
 	if (G.turn >= G.players.length)

@@ -55,6 +55,7 @@ export const game: Game =
 	lastFin: 0,
 	skill: 1,
 	noFF: false,
+	portalA: null,
 };
 
 export const emptyWorld = (): World => (
@@ -68,6 +69,7 @@ export const emptyWorld = (): World => (
 	balls: [],
 	firebars: [],
 	firetracks: [],
+	portals: [],
 	sawtracks: [],
 	lasers: [],
 	fans: [],

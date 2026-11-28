@@ -333,7 +333,7 @@ export function genCourse(): Piece[] | null
 			cur = tg;
 		}
 		if (!ok || !solvable(pcs)) continue;
-		const pool = TYPES.filter((t) => t !== "bomb" && !SOLIDT.has(t));
+		const pool = TYPES.filter((t) => t !== "bomb" && t !== "portal" && !SOLIDT.has(t));
 		const hz = pool.filter((t) => DEFS[t].kind === "hazard");
 		const route = pcs.filter((q) => SOLIDT.has(q.type));
 		let added = 0;

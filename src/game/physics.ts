@@ -28,6 +28,7 @@ export const newRunner = (): Runner => (
 	boost: 0,
 	crouch: false,
 	dropT: 0,
+	plock: null,
 });
 
 function moveX(p: Runner, d: number): void
@@ -376,6 +377,36 @@ export function stepRun(dt: number): void
 			return;
 		}
 	}
+	let inPortal = false;
+	for (const q of world.portals)
+		for (const [from, to] of [
+			[q.a, q.b],
+			[q.b, q.a],
+		] as const)
+		{
+			if (
+				!hit(
+					p,
+					{
+						x: from.x + 10,
+						y: from.y + 6,
+						w: T - 20,
+						h: 2 * T - 12,
+					},
+				)
+			)
+				continue;
+			inPortal = true;
+			if (p.plock !== q)
+			{
+				p.x = to.x + T / 2 - p.w / 2;
+				p.y = to.y + 2 * T - p.h - 1;
+				p.plock = q;
+				sfx("gate");
+				burst(to.x + T / 2, to.y + T, "#c77dff", 14);
+			}
+		}
+	if (!inPortal) p.plock = null;
 	if (
 		LV.sw &&
 		!world.swOn &&

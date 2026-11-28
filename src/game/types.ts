@@ -22,6 +22,7 @@ export type PieceType =
 	| "saw"
 	| "cannon"
 	| "firebar"
+	| "portal"
 	| "firetrack"
 	| "sawtrack"
 	| "laser"
@@ -60,7 +61,17 @@ export interface PieceDef
 	cells: (rot: number) => Cell[];
 }
 
-/** A piece on the course, or one being held. `parts` are its moving bits in the current world, for drawing. */
+/** A spot on the grid, as column and row. */
+export interface GridPos
+{
+	c: number;
+	r: number;
+}
+
+/**
+ * A piece on the course, or one being held. `parts` are its moving bits in the current world, for drawing. A portal's
+ * entrance is at (c, r) and its exit at `b`.
+ */
 export interface Piece
 {
 	type: PieceType;
@@ -70,6 +81,7 @@ export interface Piece
 	owner: number;
 	t0?: number;
 	parts?: Parts;
+	b?: GridPos;
 }
 
 /** Ground and lava rects are [col,row,width,height]; start and flag are [col, row of the surface]. */
@@ -235,6 +247,20 @@ export interface Axe
 	owner: number;
 	t0: number;
 }
+/** A portal's entrance (a) and exit (b), by their top left corners. */
+export interface Portal
+{
+	a:
+	{
+		x: number;
+		y: number;
+	};
+	b:
+	{
+		x: number;
+		y: number;
+	};
+}
 export interface Crusher
 {
 	x: number;
@@ -272,6 +298,7 @@ export interface World
 	balls: Ball[];
 	firebars: FireBar[];
 	firetracks: Track[];
+	portals: Portal[];
 	sawtracks: Track[];
 	lasers: Laser[];
 	fans: Fan[];
@@ -299,6 +326,8 @@ export interface Runner extends Rect
 	crouch: boolean;
 	/** Seconds left falling through clouds after crouching on one. */
 	dropT: number;
+	/** The portal it just came out of, which cannot take it back until it steps out. */
+	plock: Portal | null;
 }
 
 export type Result =
@@ -432,6 +461,8 @@ export interface Game
 	lastFin: number;
 	skill: number;
 	noFF: boolean;
+	/** A portal's entrance, placed and waiting for its exit. */
+	portalA: GridPos | null;
 }
 
 /** The player setup, saved in localStorage under `pieceparty`. */
