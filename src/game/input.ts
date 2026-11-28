@@ -1,4 +1,4 @@
-import {$} from "./dom.ts";
+import {$, pointer} from "./dom.ts";
 import {die} from "./physics.ts";
 import {sound} from "./sound.ts";
 import {game as G, placing, sim} from "./state.ts";
@@ -6,7 +6,7 @@ import type {Keys} from "./types.ts";
 import {beginRun, confirmPlace, cpuTurn, ghostFrom, placeGhost, practicePlay, renderTray, rotate} from "./ui.ts";
 import {buildWorld} from "./world.ts";
 
-// The keyboard, the touch buttons over the course, the mouse on the course, and the sound toggle.
+// The keyboard, the touch pad under the course, the mouse on the course, and the full screen and sound toggles.
 
 const KEYMAP: Record<string, keyof Keys> =
 {
@@ -156,11 +156,55 @@ function bindCourse(cv: HTMLElement): void
 	);
 }
 
+/** Sets pointer.coarse, and the body's `coarse` class that shows the touch pad. */
+function setCoarse(on: boolean): void
+{
+	pointer.coarse = on;
+	document.body.classList.toggle("coarse", on);
+}
+
+/** Keeps pointer.coarse in step with the main pointer. */
+function watchPointer(): void
+{
+	const coarse = matchMedia("(pointer:coarse)");
+	setCoarse(coarse.matches);
+	coarse.addEventListener("change", (e) =>
+	{
+		setCoarse(e.matches);
+	});
+}
+
+/** Shows the full screen toggle where the browser allows it. */
+function bindFullScreen(): void
+{
+	const el = document.documentElement;
+	const btn = $("fsBtn");
+	if (!document.fullscreenEnabled) return;
+	btn.hidden = false;
+	btn.addEventListener("click", () =>
+	{
+		(document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen()).catch(() =>
+		{
+			// Refused, as when the browser wants a fresher tap: the page stays as it is.
+		});
+	});
+	document.addEventListener("fullscreenchange", () =>
+	{
+		btn.textContent = document.fullscreenElement ? "Exit full screen" : "Full screen";
+	});
+}
+
 export function initInput(): void
 {
+	watchPointer();
 	addEventListener("keydown", onKeyDown);
 	addEventListener("keyup", onKeyUp);
 	for (const b of document.querySelectorAll(".touch button")) if (b instanceof HTMLButtonElement) bindTouchButton(b);
+	$("padGive").addEventListener("click", () =>
+	{
+		if (sim.run?.state === "go") die(-1, "gaveup");
+	});
+	bindFullScreen();
 	bindCourse($("cv"));
 	const mute = $("mute");
 	mute.addEventListener("click", () =>

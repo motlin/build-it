@@ -1,5 +1,11 @@
 // Small helpers for the page's markup.
 
+/** Whether the main pointer is a finger, as on a phone or tablet, which shows the touch pad and touch hints. */
+export const pointer =
+{
+	coarse: false,
+};
+
 /** The element with this id. The markup in index.html always has it, so a miss is a bug. */
 export const $ = (id: string): HTMLElement => document.getElementById(id)!;
 

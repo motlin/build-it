@@ -1,6 +1,6 @@
 import {placeAmong, setLevel, valid} from "./course.ts";
 import {cpuChoosePick, cpuInitRun, cpuPlacement, cpuPlanFrame} from "./cpu.ts";
-import {$, $canvas, buttonOf, canvases, esc} from "./dom.ts";
+import {$, $canvas, buttonOf, canvases, esc, pointer} from "./dom.ts";
 import {drawLevelThumb, drawThumb} from "./draw.ts";
 import {burst} from "./effects.ts";
 import {H, rand, T, W} from "./geometry.ts";
@@ -87,7 +87,10 @@ function renderHUD(): void
 			: G.round
 				? `Round ${G.round} · ${LV.name} · first to ${G.target}${G.noFF ? " · no friendly fire" : ""}`
 				: "";
-	$("stage").classList.toggle("running", G.phase === "run");
+	const was = document.body.classList.contains("running");
+	document.body.classList.toggle("running", G.phase === "run");
+	// On a phone held sideways, a run starts with the course scrolled fully into view.
+	if (!was && G.phase === "run" && pointer.coarse && innerWidth > innerHeight) scrollTo(0, 0);
 }
 
 function renderSetup(): void
@@ -634,17 +637,17 @@ export function renderTray(): void
 				},
 				placeAmong(held()),
 			);
-			tray().innerHTML = `<div class="msg">${chipOf(pi)}, ${fits ? `place your <b>${what}</b> here?` : `your <b>${d.name}</b> doesn't fit there.`}<small>Enter to confirm, Esc to cancel. Arrow buttons nudge it, or click another spot.</small></div><div class="nudge" aria-label="Nudge piece"><button data-nudge="0,-1" aria-label="Up">▲</button><button data-nudge="-1,0" aria-label="Left">◀</button><button data-nudge="0,1" aria-label="Down">▼</button><button data-nudge="1,0" aria-label="Right">▶</button></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="movePlace">Cancel</button><button class="pri" id="okPlace" ${fits ? "" : "disabled"}>Confirm</button>`;
+			tray().innerHTML = `<div class="msg">${chipOf(pi)}, ${fits ? `place your <b>${what}</b> here?` : `your <b>${d.name}</b> doesn't fit there.`}<small>${pointer.coarse ? "Use the arrows to nudge it, or tap another spot." : "Enter to confirm, Esc to cancel. Arrow buttons nudge it, or click another spot."}</small></div><div class="nudge" aria-label="Nudge piece"><button data-nudge="0,-1" aria-label="Up">▲</button><button data-nudge="-1,0" aria-label="Left">◀</button><button data-nudge="0,1" aria-label="Down">▼</button><button data-nudge="1,0" aria-label="Right">▶</button></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="movePlace">Cancel</button><button class="pri" id="okPlace" ${fits ? "" : "disabled"}>Confirm</button>`;
 			renderHUD();
 			return;
 		}
-		tray().innerHTML = `<canvas id="hold" width="240" height="128" title="Drag onto the course"></canvas><div class="msg">${chipOf(pi)}, ${held() === "portal" ? (G.portalA ? "now place the <b>portal exit</b>." : "place the <b>portal entrance</b> first, then its exit.") : `drag your <b>${d.name}</b> onto the course.`}<small>Or hover the course and click. ${d.rots > 1 ? "R, right-click or scroll to rotate." : ""} You'll confirm before it's placed.</small></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="skipBtn">${placing.discardArm ? "Tap again to discard" : "Discard piece"}</button>`;
+		tray().innerHTML = `<canvas id="hold" width="240" height="128" title="Drag onto the course"></canvas><div class="msg">${chipOf(pi)}, ${held() === "portal" ? (G.portalA ? "now place the <b>portal exit</b>." : "place the <b>portal entrance</b> first, then its exit.") : `drag your <b>${d.name}</b> onto the course.`}<small>${pointer.coarse ? `Or tap a spot on the course. ${d.rots > 1 ? "Rotate with the button." : ""}` : `Or hover the course and click. ${d.rots > 1 ? "R, right-click or scroll to rotate." : ""}`} You'll confirm before it's placed.</small></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="skipBtn">${placing.discardArm ? "Tap again to discard" : "Discard piece"}</button>`;
 		drawThumb($canvas("hold"), held(), G.rot);
 		bindHold();
 	}
 	else if (G.phase === "run" && run)
 	{
-		tray().innerHTML = `<div class="msg">${chipOf(run.pi)}'s turn to run <small>Arrows or A/D to move · Space, Up or W to jump · Down or S to crouch · stuck? press Give up (or G) · no time limit, but after 1 minute you get 5 seconds to start moving again or you're out</small></div><button id="giveBtn" ${run.state === "go" ? "" : "disabled"}>Give up</button><button class="pri" id="goBtn" ${run.state === "ready" && !run.cpu ? "" : "disabled"}>Go!</button>`;
+		tray().innerHTML = `<div class="msg">${chipOf(run.pi)}'s turn to run <small>${pointer.coarse ? "◀ ▶ move, ▲ jump, ▼ crouch" : "Arrows or A/D to move · Space, Up or W to jump · Down or S to crouch"} · stuck? Give up${pointer.coarse ? "" : " (or G)"} · no time limit, but after 1 minute you get 5 seconds to start moving again or you're out</small></div><button id="giveBtn" ${run.state === "go" ? "" : "disabled"}>Give up</button><button class="pri" id="goBtn" ${run.state === "ready" && !run.cpu ? "" : "disabled"}>Go!</button>`;
 	}
 	renderHUD();
 }
@@ -952,7 +955,15 @@ function readyRun(): void
 		doneT: 0,
 	};
 	if (isCPU(pi)) cpuInitRun();
-	turnPop(pi, "run", isCPU(pi) ? "The CPU is planning its route" : "Press Space, Up or W when ready");
+	turnPop(
+		pi,
+		"run",
+		isCPU(pi)
+			? "The CPU is planning its route"
+			: pointer.coarse
+				? "Tap Go! when ready"
+				: "Press Space, Up or W when ready",
+	);
 	sim.keys =
 	{
 		l: 0,

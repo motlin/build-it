@@ -1,6 +1,7 @@
 import {placeAmong, valid} from "./course.ts";
 import {COLS, DIRV, H, ROWS, T, W} from "./geometry.ts";
 import {DEFS, isBomb, onTop, pieceCells} from "./pieces.ts";
+import {pointer} from "./dom.ts";
 import {course, game, placing, sim} from "./state.ts";
 import type {Level, Piece, PieceType} from "./types.ts";
 
@@ -8,6 +9,7 @@ import type {Level, Piece, PieceType} from "./types.ts";
 // the placing ghost, banners and particles. Also the piece and level thumbnails on the cards and in the tray.
 
 let ctx: CanvasRenderingContext2D;
+let canvas: HTMLCanvasElement;
 const DPR = Math.min(2, window.devicePixelRatio || 1);
 
 /** Sizes the course canvas for the screen's pixel density. */
@@ -15,6 +17,7 @@ export function initCanvas(): void
 {
 	const cv = document.getElementById("cv");
 	if (!(cv instanceof HTMLCanvasElement)) throw new Error("#cv is missing or not a canvas");
+	canvas = cv;
 	ctx = cv.getContext("2d")!;
 	cv.width = W * DPR;
 	cv.height = H * DPR;
@@ -1185,22 +1188,32 @@ function drawGrid(): void
 	}
 }
 
+/** How much to enlarge text on the course so it stays readable when the course is shown small, as on a phone. */
+const uiK = (): number => Math.max(1, 0.62 / ((canvas.clientWidth || W) / W));
+
 function banner(a: string, b?: string): void
 {
-	ctx.font = "700 38px Fredoka,system-ui";
+	const k = uiK();
+	ctx.save();
+	ctx.translate(W / 2, 64);
+	ctx.scale(k, k);
 	ctx.textAlign = "center";
-	const w = Math.max(ctx.measureText(a).width, b ? ctx.measureText(b).width * 0.5 : 0) + 60;
+	ctx.font = "500 20px Fredoka,system-ui";
+	const sw = b ? ctx.measureText(b).width : 0;
+	ctx.font = "700 38px Fredoka,system-ui";
+	const w = Math.min(W / k - 20, Math.max(ctx.measureText(a).width, sw) + 60);
 	ctx.fillStyle = "rgba(15,24,48,.82)";
-	rr(ctx, W / 2 - w / 2, 64, w, b ? 104 : 66, 18);
+	rr(ctx, -w / 2, 0, w, b ? 104 : 66, 18);
 	ctx.fill();
 	ctx.fillStyle = "#fff";
-	ctx.fillText(a, W / 2, 110);
+	ctx.fillText(a, 0, 46);
 	if (b)
 	{
 		ctx.font = "500 20px Fredoka,system-ui";
 		ctx.fillStyle = "#ffd166";
-		ctx.fillText(b, W / 2, 146);
+		ctx.fillText(b, 0, 82);
 	}
+	ctx.restore();
 }
 
 const OUT_BANNERS: Record<string, string> =
@@ -1287,13 +1300,19 @@ export function draw(): void
 		{
 			const m = Math.floor(run.t / 60);
 			const sec = (run.t % 60).toFixed(1).padStart(4, "0");
+			const k = uiK();
+			ctx.save();
+			ctx.translate(W / 2, 14);
+			ctx.scale(k, k);
 			ctx.fillStyle = "rgba(15,24,48,.6)";
-			rr(ctx, W / 2 - 70, 14, 140, 40, 12);
+			rr(ctx, -70, 0, 140, 40, 12);
 			ctx.fill();
 			ctx.fillStyle = run.t > 60 ? "#ffd166" : "#fff";
 			ctx.font = "700 24px Fredoka,system-ui";
 			ctx.textAlign = "center";
-			ctx.fillText(`${m}:${sec}`, W / 2, 42);
+			ctx.fillText(`${m}:${sec}`, 0, 28);
+			ctx.restore();
+			ctx.textAlign = "center";
 			if (run.t > 60 && run.idle > 0)
 			{
 				const left = Math.max(0, 5 - run.idle);
@@ -1318,7 +1337,14 @@ export function draw(): void
 			}
 		}
 		if (run.state === "ready")
-			banner(`${pl.name}'s run`, run.cpu ? "The CPU is planning its route" : "Press Space, Up or W to go");
+			banner(
+				`${pl.name}'s run`,
+				run.cpu
+					? "The CPU is planning its route"
+					: pointer.coarse
+						? "Tap Go! or tap the course to start"
+						: "Press Space, Up or W to go",
+			);
 		if (run.state === "done")
 		{
 			const r = run.res!;
@@ -1400,16 +1426,21 @@ export function draw(): void
 			const Mx = Math.max(...cs.map((a) => a[0]));
 			const my = Math.min(...cs.map((a) => a[1]));
 			const lx = ((mx + Mx + 1) / 2) * T;
-			const ly = Math.max(26, my * T - 12);
+			const k = uiK();
+			const ly = Math.max(26 * k, my * T - 12);
+			ctx.save();
+			ctx.translate(lx, ly);
+			ctx.scale(k, k);
 			ctx.font = "700 16px Fredoka,system-ui";
 			ctx.textAlign = "center";
 			const lab = gh.ok ? "Confirm?" : "Does not fit";
 			const tw = ctx.measureText(lab).width + 20;
 			ctx.fillStyle = "rgba(15,24,48,.85)";
-			rr(ctx, lx - tw / 2, ly - 20, tw, 26, 8);
+			rr(ctx, -tw / 2, -20, tw, 26, 8);
 			ctx.fill();
 			ctx.fillStyle = gh.ok ? "#ffd166" : "#ff8fa3";
-			ctx.fillText(lab, lx, ly - 2);
+			ctx.fillText(lab, 0, -2);
+			ctx.restore();
 		}
 	}
 	for (const f of sim.fx)
