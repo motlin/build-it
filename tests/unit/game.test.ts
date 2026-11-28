@@ -7,7 +7,7 @@ import {DEFS, pieceCells, TYPES} from "../../src/game/pieces.ts";
 import {explore, genCourse} from "../../src/game/solver.ts";
 import {course, game, sim} from "../../src/game/state.ts";
 import type {Piece, Run} from "../../src/game/types.ts";
-import {buildWorld} from "../../src/game/world.ts";
+import {buildWorld, updateWorld} from "../../src/game/world.ts";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -438,6 +438,49 @@ it("is knocked out by another player's spikes, but not by its own with no friend
 			cause: "fell",
 			x: 220,
 			y: 696,
+		},
+	);
+});
+
+// A block nobody owns.
+const blockAt = (c: number, r: number): Piece => (
+{
+	type: "block",
+	c,
+	r,
+	rot: 0,
+	owner: -1,
+});
+
+it("fires a cannon ball out through the block its muzzle is in, and stops it at the next solid", () =>
+{
+	const cannon: Piece =
+	{
+		type: "cannon",
+		c: 5,
+		r: 10,
+		rot: 0,
+		owner: 1,
+	};
+	startRun([cannon, blockAt(6, 10), blockAt(9, 10)]);
+	const seen: number[] = [];
+	for (let i = 0; i < 120; i++)
+	{
+		updateWorld(STEP, false);
+		seen.push(sim.world.balls.length);
+	}
+	// It fires at half a second, clears the block at column 6, and bursts on the one at column 9.
+	expect(
+		{
+			firstShot: seen.indexOf(1),
+			lastFlying: seen.lastIndexOf(1),
+			flyingNow: sim.world.balls.length,
+		},
+	).toStrictEqual(
+		{
+			firstShot: 59,
+			lastFlying: 90,
+			flyingNow: 0,
 		},
 	);
 });

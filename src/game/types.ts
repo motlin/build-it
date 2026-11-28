@@ -173,6 +173,8 @@ export interface Ball
 	vy: number;
 	owner: number;
 	src: Solid;
+	/** Solids the ball was fired from inside, which it flies out through. */
+	ign: Solid[];
 }
 export interface FireBar
 {

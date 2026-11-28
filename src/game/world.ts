@@ -579,14 +579,19 @@ export function updateWorld(dt: number, live: boolean): void
 			c.n = n;
 			c.flash = 1;
 			const [dx, dy] = DIRV[c.dir]!;
+			const bx = c.x + dx * 24;
+			const by = c.y + dy * 24;
 			w.balls.push(
 				{
-					x: c.x + dx * 24,
-					y: c.y + dy * 24,
+					x: bx,
+					y: by,
 					vx: dx * 430,
 					vy: dy * 430,
 					owner: c.owner,
 					src: c.solid,
+					ign: w.solids.filter(
+						(s) => s !== c.solid && bx >= s.x && bx <= s.x + s.w && by >= s.y && by <= s.y + s.h,
+					),
 				},
 			);
 			if (live) sfx("shot");
@@ -599,7 +604,7 @@ export function updateWorld(dt: number, live: boolean): void
 		if (b.x < -20 || b.x > W + 20 || b.y < -20 || b.y > H + 20) return false;
 		for (const s of w.solids)
 		{
-			if (s === b.src || s.off || s.oneway) continue;
+			if (s === b.src || s.off || s.oneway || b.ign.includes(s)) continue;
 			if (b.x > s.x && b.x < s.x + s.w && b.y > s.y && b.y < s.y + s.h)
 			{
 				burst(b.x, b.y, "#4a4e69", 6);
