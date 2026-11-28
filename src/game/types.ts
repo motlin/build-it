@@ -3,6 +3,11 @@
 export type PieceType =
 	| "block"
 	| "plank"
+	| "tee"
+	| "zig"
+	| "stairs"
+	| "pillar"
+	| "arch"
 	| "big"
 	| "ell"
 	| "spring"

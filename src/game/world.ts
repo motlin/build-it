@@ -65,6 +65,11 @@ export function buildWorld(): void
 		{
 			case "block":
 			case "plank":
+			case "tee":
+			case "zig":
+			case "stairs":
+			case "pillar":
+			case "arch":
 			case "big":
 			case "ell":
 			case "bridge":

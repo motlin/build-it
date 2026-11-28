@@ -23,6 +23,80 @@ function sqr(n: number): Cell[]
 	for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) a.push([x, y]);
 	return a;
 }
+const TEE: Cell[][] = [
+	[
+		[0, 0],
+		[1, 0],
+		[2, 0],
+		[1, 1],
+	],
+	[
+		[1, 0],
+		[1, 1],
+		[1, 2],
+		[0, 1],
+	],
+	[
+		[1, 0],
+		[0, 1],
+		[1, 1],
+		[2, 1],
+	],
+	[
+		[0, 0],
+		[0, 1],
+		[0, 2],
+		[1, 1],
+	],
+];
+const ZIG: Cell[][] = [
+	[
+		[0, 0],
+		[1, 0],
+		[1, 1],
+		[2, 1],
+	],
+	[
+		[1, 0],
+		[0, 1],
+		[1, 1],
+		[0, 2],
+	],
+];
+const STAIRS: Cell[][] = [
+	[
+		[0, 2],
+		[1, 2],
+		[2, 2],
+		[1, 1],
+		[2, 1],
+		[2, 0],
+	],
+	[
+		[0, 2],
+		[1, 2],
+		[2, 2],
+		[0, 1],
+		[1, 1],
+		[0, 0],
+	],
+];
+const ARCH: Cell[][] = [
+	[
+		[0, 0],
+		[1, 0],
+		[2, 0],
+		[0, 1],
+		[2, 1],
+	],
+	[
+		[0, 0],
+		[2, 0],
+		[0, 1],
+		[1, 1],
+		[2, 1],
+	],
+];
 const ELL: Cell[][] = [
 	[
 		[0, 0],
@@ -65,6 +139,46 @@ export const DEFS: Record<PieceType, PieceDef> =
 		kind: "build",
 		rots: 2,
 		cells: (r) => (r ? col(3) : row(3)),
+	},
+	tee:
+	{
+		name: "T block",
+		tip: "A T-shaped block",
+		kind: "build",
+		rots: 4,
+		cells: (r) => TEE[r]!,
+	},
+	zig:
+	{
+		name: "Zigzag",
+		tip: "An S-shaped block",
+		kind: "build",
+		rots: 2,
+		cells: (r) => ZIG[r]!,
+	},
+	stairs:
+	{
+		name: "Stairs",
+		tip: "A 3-step staircase",
+		kind: "build",
+		rots: 2,
+		cells: (r) => STAIRS[r]!,
+	},
+	pillar:
+	{
+		name: "Pillar",
+		tip: "A tall 4-block column",
+		kind: "build",
+		rots: 2,
+		cells: (r) => (r ? row(4) : col(4)),
+	},
+	arch:
+	{
+		name: "Arch",
+		tip: "A U-shaped block with a gap",
+		kind: "build",
+		rots: 2,
+		cells: (r) => ARCH[r]!,
 	},
 	big:
 	{
@@ -297,6 +411,11 @@ export const KIND: Record<Kind, string> =
 export const TYPES: PieceType[] = [
 	"block",
 	"plank",
+	"tee",
+	"zig",
+	"stairs",
+	"pillar",
+	"arch",
 	"big",
 	"ell",
 	"spring",
@@ -347,4 +466,15 @@ export const STACK = new Set<PieceType>([
 	"mover",
 ]);
 /** The plain solid pieces, which the route checker stands on. */
-export const SOLIDT = new Set<PieceType>(["block", "plank", "big", "ell", "bridge"]);
+export const SOLIDT = new Set<PieceType>([
+	"block",
+	"plank",
+	"big",
+	"ell",
+	"bridge",
+	"tee",
+	"zig",
+	"stairs",
+	"pillar",
+	"arch",
+]);

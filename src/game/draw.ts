@@ -101,6 +101,16 @@ function cell(g: CanvasRenderingContext2D, x: number, y: number, c: string, hi: 
 	g.fill();
 }
 
+/** The shaped build pieces' colors: [face, highlight, shadow]. */
+const SHAPE_COL: Partial<Record<PieceType, [string, string, string]>> =
+{
+	tee: ["#f3722c", "#f8a26f", "#b4501a"],
+	zig: ["#43aa8b", "#7fd1b5", "#2c7a62"],
+	stairs: ["#8d99ae", "#c0c8d6", "#5f6b80"],
+	pillar: ["#cdb4db", "#ead9f3", "#9b7fae"],
+	arch: ["#bc4749", "#e07a7c", "#8a2f31"],
+};
+
 /** Draws a piece at time t, with its moving parts where the world has them, or at rest for a ghost or thumbnail. */
 function drawPiece(g: CanvasRenderingContext2D, p: Piece, t: number): void
 {
@@ -148,6 +158,31 @@ function drawPiece(g: CanvasRenderingContext2D, p: Piece, t: number): void
 	let dot: [number, number] = [X, Y];
 	switch (p.type)
 	{
+		case "tee":
+		case "zig":
+		case "stairs":
+		case "pillar":
+		case "arch":
+		{
+			const [face, hi, lo] = SHAPE_COL[p.type]!;
+			for (const [c, r] of pieceCells(p)) cell(g, c * T, r * T, face, hi, lo);
+			dot = [pieceCells(p)[0]![0] * T, pieceCells(p)[0]![1] * T];
+			if (p.type === "pillar")
+			{
+				g.strokeStyle = "rgba(255,255,255,.35)";
+				g.lineWidth = 2;
+				for (const [c, r] of pieceCells(p))
+				{
+					g.beginPath();
+					g.moveTo(c * T + 12, r * T + 6);
+					g.lineTo(c * T + 12, r * T + T - 8);
+					g.moveTo(c * T + T - 12, r * T + 6);
+					g.lineTo(c * T + T - 12, r * T + T - 8);
+					g.stroke();
+				}
+			}
+			break;
+		}
 		case "block":
 		case "plank":
 		case "big":
