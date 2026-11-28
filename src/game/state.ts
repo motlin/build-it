@@ -100,6 +100,7 @@ export const sim:
 		l: 0,
 		r: 0,
 		j: 0,
+		d: 0,
 	},
 	clock: 0,
 	quiet: false,

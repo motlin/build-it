@@ -113,7 +113,7 @@ function renderSetup(): void
   <div class="row" ${n === 1 ? "hidden" : ""}><span class="lbl">Friendly fire</span><div class="seg"><button data-ff="0" class="${S.noFF ? "" : "on"}">On</button><button data-ff="1" class="${S.noFF ? "on" : ""}">No friendly fire</button></div><small style="color:var(--mut);flex:1 1 220px">${S.noFF ? "Your own traps can't hurt you." : "Your own traps can knock you out too."}</small></div>
   <div class="row" ${n === 1 ? "hidden" : ""}><span class="lbl">Points to win</span><div class="seg" id="tgt">${[5, 8, 10, 15, 20, 25, 30].map((k) => `<button data-t="${k}" class="${k === S.target ? "on" : ""}">${k}</button>`).join("")}</div></div>
   <ul class="rules"><li>First, everyone <b>votes on a level</b>. Some levels wrap around the edges, have lava, low gravity or ice.</li><li>Each round, everyone <b>picks a piece</b> from the box, then <b>drags it onto the course</b>. Press R or right-click to rotate.</li>
-  <li>Then everyone takes a turn running from Start to the flag. Move with arrows or A/D, jump with Space, Up or W. There's no time limit, but after 1 minute, stop moving and a 5-second countdown starts. If it runs out, you're out.</li>
+  <li>Then everyone takes a turn running from Start to the flag. Move with arrows or A/D, jump with Space, Up or W, crouch with Down or S (squeeze under low beams, sink through fans, slide down vines, drop through clouds). There's no time limit, but after 1 minute, stop moving and a 5-second countdown starts. If it runs out, you're out.</li>
   <li><b>+3</b> for reaching the flag. <b>+1</b> each time your trap knocks someone out (only if somebody made it). With 3 or more players: <b>+2 more</b> if you are the only one to make it, and <b>+1</b> for the fastest finisher when two or more make it.</li>
   <li>If everyone makes it: <b>too easy, no points</b>.</li>
   <li>Every 3rd round, a <b>bomb</b> is in the box.</li>
@@ -587,7 +587,7 @@ export function renderTray(): void
 	}
 	else if (G.phase === "run" && run)
 	{
-		tray().innerHTML = `<div class="msg">${chipOf(run.pi)}'s turn to run <small>Arrows or A/D to move · Space, Up or W to jump · stuck? press Give up (or G) · no time limit, but after 1 minute you get 5 seconds to start moving again or you're out</small></div><button id="giveBtn" ${run.state === "go" ? "" : "disabled"}>Give up</button><button class="pri" id="goBtn" ${run.state === "ready" && !run.cpu ? "" : "disabled"}>Go!</button>`;
+		tray().innerHTML = `<div class="msg">${chipOf(run.pi)}'s turn to run <small>Arrows or A/D to move · Space, Up or W to jump · Down or S to crouch · stuck? press Give up (or G) · no time limit, but after 1 minute you get 5 seconds to start moving again or you're out</small></div><button id="giveBtn" ${run.state === "go" ? "" : "disabled"}>Give up</button><button class="pri" id="goBtn" ${run.state === "ready" && !run.cpu ? "" : "disabled"}>Go!</button>`;
 	}
 	renderHUD();
 }
@@ -859,6 +859,7 @@ function readyRun(): void
 		l: 0,
 		r: 0,
 		j: 0,
+		d: 0,
 	};
 	renderTray();
 }

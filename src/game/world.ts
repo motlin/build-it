@@ -85,6 +85,29 @@ export function buildWorld(): void
 						},
 					);
 				break;
+			case "beam":
+				w.solids.push(
+					p.rot
+						?
+							{
+								x: X + T - 22,
+								y: Y,
+								w: 22,
+								h: 3 * T,
+								k: "block",
+								t0,
+							}
+						:
+							{
+								x: X,
+								y: Y,
+								w: 3 * T,
+								h: 22,
+								k: "block",
+								t0,
+							},
+				);
+				break;
 			case "ice":
 				w.solids.push(
 					{

@@ -123,6 +123,9 @@ const ACTS: Action[] = [
 	[-1, 1],
 	[0, 0],
 	[0, 1],
+	[1, 0, 1],
+	[-1, 0, 1],
+	[0, 0, 1],
 ];
 
 function solidGrid(sw: number): Uint8Array
@@ -262,6 +265,7 @@ function simStep(
 		l: a[0] < 0 ? 1 : 0,
 		r: a[0] > 0 ? 1 : 0,
 		j: a[1],
+		d: a[2] ?? 0,
 	};
 	let res: "ok" | "win" | "dead" = "ok";
 	try
@@ -445,6 +449,7 @@ function planStep(P: Planner, ms: number): void
 				(np.x / 8) | 0,
 				(np.y / 8) | 0,
 				np.onG ? 1 : 0,
+				np.crouch ? 1 : 0,
 				Math.round(np.vx / 100),
 				Math.round(np.vy / 200),
 				r.sw,
@@ -552,6 +557,7 @@ export function cpuControl(): void
 				l: 0,
 				r: 0,
 				j: 0,
+				d: 0,
 			};
 			C.P = makePlanner(p, sim.world.swOn ? 1 : 0, true, performance.now());
 			return;
@@ -563,6 +569,7 @@ export function cpuControl(): void
 			l: a[0] < 0 ? 1 : 0,
 			r: a[0] > 0 ? 1 : 0,
 			j: a[1],
+			d: a[2] ?? 0,
 		};
 		if (a[1] && !C.prevJ) p.buf = 0.12;
 		C.prevJ = a[1];

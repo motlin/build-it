@@ -180,6 +180,14 @@ export const DEFS: Record<PieceType, PieceDef> =
 		rots: 2,
 		cells: (r) => ARCH[r]!,
 	},
+	beam:
+	{
+		name: "Low beam",
+		tip: "A low girder. Crouch (down) to squeeze under it",
+		kind: "build",
+		rots: 2,
+		cells: (r) => (r ? col(3) : row(3)),
+	},
 	big:
 	{
 		name: "Big block",
@@ -416,6 +424,7 @@ export const TYPES: PieceType[] = [
 	"stairs",
 	"pillar",
 	"arch",
+	"beam",
 	"big",
 	"ell",
 	"spring",
@@ -477,4 +486,5 @@ export const SOLIDT = new Set<PieceType>([
 	"stairs",
 	"pillar",
 	"arch",
+	"beam",
 ]);

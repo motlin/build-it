@@ -8,6 +8,7 @@ export type PieceType =
 	| "stairs"
 	| "pillar"
 	| "arch"
+	| "beam"
 	| "big"
 	| "ell"
 	| "spring"
@@ -292,6 +293,10 @@ export interface Runner extends Rect
 	sq: number;
 	jumping: boolean;
 	boost: number;
+	/** Crouched to 16 pixels high, under a low beam or to drop through a cloud. */
+	crouch: boolean;
+	/** Seconds left falling through clouds after crouching on one. */
+	dropT: number;
 }
 
 export type Result =
@@ -328,10 +333,11 @@ export interface Keys
 	l: number;
 	r: number;
 	j: number;
+	d: number;
 }
 
-/** A CPU run's move: [direction, jump]. */
-export type Action = [number, number];
+/** A CPU run's move: [direction, jump] or [direction, jump, crouch]. */
+export type Action = [number, number] | [number, number, number];
 
 export interface PlanNode
 {

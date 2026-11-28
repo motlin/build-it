@@ -114,8 +114,8 @@ const SHAPE_COL: Partial<Record<PieceType, [string, string, string]>> =
 /** Draws a piece at time t, with its moving parts where the world has them, or at rest for a ghost or thumbnail. */
 function drawPiece(g: CanvasRenderingContext2D, p: Piece, t: number): void
 {
-	// Stood-up ice and conveyors are the lying-down ones turned a quarter turn.
-	if ((p.type === "ice" && p.rot === 1) || (p.type === "belt" && p.rot > 1))
+	// Stood-up ice, low beams and conveyors are the lying-down ones turned a quarter turn.
+	if (((p.type === "ice" || p.type === "beam") && p.rot === 1) || (p.type === "belt" && p.rot > 1))
 	{
 		g.save();
 		g.translate(p.c * T + T, p.r * T);
@@ -180,6 +180,38 @@ function drawPiece(g: CanvasRenderingContext2D, p: Piece, t: number): void
 					g.lineTo(c * T + T - 12, r * T + T - 8);
 					g.stroke();
 				}
+			}
+			break;
+		}
+		case "beam":
+		{
+			g.fillStyle = "#5c677d";
+			rr(g, X + 1, Y, 3 * T - 2, 22, 4);
+			g.fill();
+			g.fillStyle = "#7d8597";
+			g.fillRect(X + 3, Y + 2, 3 * T - 6, 4);
+			// Yellow and black hazard stripes along its underside.
+			g.save();
+			g.beginPath();
+			g.rect(X + 1, Y + 16, 3 * T - 2, 6);
+			g.clip();
+			for (let k = -1; k < 16; k++)
+			{
+				g.fillStyle = k % 2 ? "#1b1b2f" : "#ffd166";
+				g.beginPath();
+				g.moveTo(X + k * 10, Y + 22);
+				g.lineTo(X + k * 10 + 10, Y + 16);
+				g.lineTo(X + k * 10 + 20, Y + 16);
+				g.lineTo(X + k * 10 + 10, Y + 22);
+				g.fill();
+			}
+			g.restore();
+			g.fillStyle = "#adb5bd";
+			for (let k = 0; k < 6; k++)
+			{
+				g.beginPath();
+				g.arc(X + 10 + k * 20, Y + 11, 2, 0, 7);
+				g.fill();
 			}
 			break;
 		}
@@ -768,14 +800,24 @@ function hardHat(g: CanvasRenderingContext2D, cx: number, by: number, s: number,
 	g.restore();
 }
 
-function square(g: CanvasRenderingContext2D, x: number, y: number, s: number, c: string, al: number, face = 1): void
+/** A player's square, s wide and h high (shorter when crouched), in its hard hat. */
+function square(
+	g: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	s: number,
+	c: string,
+	al: number,
+	face = 1,
+	h = s,
+): void
 {
 	g.save();
 	g.globalAlpha = al;
 	g.fillStyle = shade(c, -0.35);
-	g.fillRect(x, y, s, s);
+	g.fillRect(x, y, s, h);
 	g.fillStyle = c;
-	g.fillRect(x + 2.5, y + 2.5, s - 5, s - 5);
+	g.fillRect(x + 2.5, y + 2.5, s - 5, h - 5);
 	hardHat(g, x + s / 2, y + 1, s, face);
 	g.restore();
 }
@@ -1127,7 +1169,7 @@ export function draw(): void
 			const offs: [number, number][] = [[0, 0]];
 			if (LV.wrapX) offs.push([W, 0], [-W, 0]);
 			if (LV.wrapY) offs.push([0, H], [0, -H]);
-			for (const [ox, oy] of offs) square(ctx, p.x + ox, p.y + oy + bob, p.w, pl.color, 1, p.face);
+			for (const [ox, oy] of offs) square(ctx, p.x + ox, p.y + oy + bob, p.w, pl.color, 1, p.face, p.h);
 		}
 		if (run.state === "go")
 		{

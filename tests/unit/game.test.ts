@@ -37,6 +37,7 @@ function startRun(pieces: Piece[], at?: Partial<Runner>): Run
 		l: 0,
 		r: 0,
 		j: 0,
+		d: 0,
 	};
 	buildWorld();
 	const run: Run =
@@ -110,6 +111,7 @@ it("lists every piece once, with the cells each rotation covers", () =>
 			stairs: ["..#/.##/###", "#../##./###"],
 			pillar: ["#/#/#/#", "####"],
 			arch: ["###/#.#", "#.#/###"],
+			beam: ["###", "#/#/#"],
 			big: ["##/##"],
 			ell: ["#./##", "##/#.", "##/.#", ".#/##"],
 			spring: ["#"],
@@ -319,6 +321,8 @@ it("falls under gravity onto a block and stands on it", () =>
 				sq: 0.9583333333333334,
 				jumping: false,
 				boost: 0,
+				crouch: false,
+				dropT: 0,
 			},
 			state: "go",
 		},
@@ -536,6 +540,66 @@ it("rides a conveyor stood on end up its side, and is pulled down beside one tur
 			{
 				y: 382.15972222222223,
 				vy: 259.1666666666667,
+			},
+		},
+	);
+});
+
+// Where a runner walking right from the start ledge toward a low beam ends up, crouched or not, and whether it then
+// stands back up with the crouch let go.
+function underBeam(crouch: number): Pick<Runner, "x" | "y" | "h" | "crouch">
+{
+	const run = startRun(
+		[
+			{
+				type: "beam",
+				c: 3,
+				r: 12,
+				rot: 0,
+				owner: -1,
+			},
+		],
+		{
+			x: 85,
+			y: 490,
+		},
+	);
+	sim.keys.r = 1;
+	sim.keys.d = crouch;
+	for (let i = 0; i < 60; i++) stepRun(STEP);
+	sim.keys.r = 0;
+	sim.keys.d = 0;
+	stepRun(STEP);
+	return {
+		x: run.p.x,
+		y: run.p.y,
+		h: run.p.h,
+		crouch: run.p.crouch,
+	};
+}
+
+it("crouches under a low beam it cannot walk through, and stays crouched until there is room to stand", () =>
+{
+	expect(
+		{
+			standing: underBeam(0),
+			crouching: underBeam(1),
+		},
+	).toStrictEqual(
+		{
+			standing:
+			{
+				x: 90,
+				y: 490,
+				h: 30,
+				crouch: false,
+			},
+			crouching:
+			{
+				x: 152.6111111111111,
+				y: 504,
+				h: 16,
+				crouch: true,
 			},
 		},
 	);

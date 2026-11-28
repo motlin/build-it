@@ -17,6 +17,8 @@ const KEYMAP: Record<string, keyof Keys> =
 	Space: "j",
 	ArrowUp: "j",
 	KeyW: "j",
+	ArrowDown: "d",
+	KeyS: "d",
 };
 
 function onKeyDown(e: KeyboardEvent): void
@@ -90,7 +92,7 @@ function onKeyUp(e: KeyboardEvent): void
 function bindTouchButton(b: HTMLButtonElement): void
 {
 	const k = b.dataset["k"];
-	if (k !== "l" && k !== "r" && k !== "j") return;
+	if (k !== "l" && k !== "r" && k !== "j" && k !== "d") return;
 	b.addEventListener("pointerdown", (e) =>
 	{
 		e.preventDefault();

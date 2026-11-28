@@ -6,7 +6,8 @@ import {course, game, sim} from "./state.ts";
 import type {Runner, Solid} from "./types.ts";
 import {isCrumble} from "./world.ts";
 
-// The runner: a 30 pixel square that runs, jumps, rides lifts and bounces, and is knocked out by any hazard it touches.
+// The runner: a 30 pixel square that runs, jumps, crouches, rides lifts and bounces, and is knocked out by any hazard it
+// touches.
 // stepRun moves the run in sim.run one physics step, reading sim.keys.
 
 export const newRunner = (): Runner => (
@@ -25,6 +26,8 @@ export const newRunner = (): Runner => (
 	sq: 0,
 	jumping: false,
 	boost: 0,
+	crouch: false,
+	dropT: 0,
 });
 
 function moveX(p: Runner, d: number): void
@@ -107,7 +110,7 @@ function moveY(p: Runner, d: number): void
 	for (const s of sim.world.solids)
 	{
 		if (s.off || !hit(p, s)) continue;
-		if (s.oneway && (d <= 0 || p.y + p.h - d > s.y + 0.5)) continue;
+		if (s.oneway && (d <= 0 || p.dropT > 0 || p.y + p.h - d > s.y + 0.5)) continue;
 		if (d > 0 && p.y + p.h - d > s.y + 6)
 		{
 			if (s.k !== "mover")
@@ -198,7 +201,36 @@ export function stepRun(dt: number): void
 	if (dir) p.face = dir;
 	const ice = p.onG && p.gr?.k === "ice";
 	const rate = dir ? (p.onG ? (ice ? 550 : 2800) : 1800) : p.onG ? (ice ? 220 : 3200) : 500;
-	p.vx = approach(p.vx, dir * 300, rate * dt);
+	if (keys.d && !p.crouch)
+	{
+		p.crouch = true;
+		p.y += 14;
+		p.h = 16;
+	}
+	else if (!keys.d && p.crouch)
+	{
+		const up =
+		{
+			x: p.x,
+			y: p.y - 14,
+			w: p.w,
+			h: 30,
+		};
+		if (!world.solids.some((s) => !s.off && !s.oneway && hit(up, s)))
+		{
+			p.crouch = false;
+			p.y -= 14;
+			p.h = 30;
+		}
+	}
+	if (p.crouch && p.onG && p.gr?.oneway)
+	{
+		p.dropT = 0.25;
+		p.onG = false;
+		p.gr = null;
+	}
+	if (p.dropT > 0) p.dropT -= dt;
+	p.vx = approach(p.vx, dir * (p.crouch && p.onG ? 140 : 300), rate * dt);
 	const push = p.onG && p.gr?.k === "belt" ? p.gr.dir! * 160 : 0;
 	p.buf -= dt;
 	p.coy -= dt;
@@ -238,14 +270,14 @@ export function stepRun(dt: number): void
 	for (const f of world.fans)
 		if (hit(p, f.zone))
 		{
-			if (f.dir === 3) p.vy = Math.max(-480, p.vy - 3800 * dt);
+			if (f.dir === 3) p.vy = p.crouch ? Math.min(p.vy, 160) : Math.max(-480, p.vy - 3800 * dt);
 			else if (f.dir === 1) p.vy = Math.min(1000, p.vy + 1600 * dt);
 			else wind += (f.dir === 0 ? 1 : -1) * 250;
 		}
 	moveX(p, (p.vx + push + wind + p.boost) * dt);
 	p.boost = approach(p.boost, 0, 800 * dt);
 	const vine = world.vines.some((v) => hit(p, v));
-	if (vine) p.vy = keys.j ? -240 : Math.min(p.vy + GRAV * dt, 140);
+	if (vine) p.vy = keys.j ? -240 : keys.d ? 340 : Math.min(p.vy + GRAV * dt, 140);
 	else p.vy = Math.min(p.vy + GRAV * (LV.grav ?? 1) * dt, 1000);
 	p.onG = false;
 	p.gr = null;
