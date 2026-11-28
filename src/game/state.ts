@@ -81,6 +81,7 @@ export const emptyWorld = (): World => (
 	crushers: [],
 	gate: null,
 	swOn: false,
+	sawT: 0,
 });
 
 /**

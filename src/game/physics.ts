@@ -1,7 +1,7 @@
 import {goalRect} from "./course.ts";
 import {burst} from "./effects.ts";
 import {approach, circHit, GRAV, H, hit, T, W} from "./geometry.ts";
-import {sfx} from "./sound.ts";
+import {type Sound, sfx} from "./sound.ts";
 import {course, game, sim} from "./state.ts";
 import type {Runner, Solid} from "./types.ts";
 import {isCrumble} from "./world.ts";
@@ -429,6 +429,20 @@ export function stepRun(dt: number): void
 	if (hit(hb, goalRect())) finish();
 }
 
+/** The sound of each trap that knocks a runner out, played over the knockout's. */
+const DEATH_SOUNDS: Record<string, Sound> =
+{
+	spiked: "shing",
+	sawed: "buzz",
+	scorched: "whoosh",
+	zapped: "zap",
+	squished: "slam",
+	crushed: "slam",
+	chopped: "swish",
+	blasted: "boom",
+	burned: "sizzle",
+};
+
 /** Ends the run as knocked out by a player's trap (owner), or by the course (-1). Own traps are harmless with no friendly fire. */
 export function die(owner: number, cause: string): void
 {
@@ -447,6 +461,8 @@ export function die(owner: number, cause: string): void
 	run.state = "done";
 	run.doneT = 1;
 	sfx("die");
+	const hs = DEATH_SOUNDS[cause];
+	if (hs) sfx(hs, 1.4);
 	burst(res.x, res.y, game.players[run.pi]!.color, 22);
 }
 

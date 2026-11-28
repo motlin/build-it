@@ -3,6 +3,16 @@ import {sim} from "./state.ts";
 // Every sound is one oscillator sweeping from one pitch to another: [start Hz, end Hz, seconds, wave, volume].
 const SND =
 {
+	zap: [1100, 260, 0.2, "sawtooth", 0.035],
+	pop: [260, 780, 0.09, "square", 0.045],
+	slam: [140, 40, 0.28, "square", 0.09],
+	swish: [700, 180, 0.18, "triangle", 0.06],
+	whoosh: [240, 110, 0.22, "sawtooth", 0.035],
+	buzz: [170, 230, 0.22, "sawtooth", 0.022],
+	blip: [880, 440, 0.08, "sine", 0.04],
+	shing: [1500, 900, 0.14, "triangle", 0.05],
+	sizzle: [400, 120, 0.35, "sawtooth", 0.04],
+	bubble: [180, 320, 0.1, "sine", 0.04],
 	jump: [520, 780, 0.12, "square", 0.04],
 	boing: [260, 900, 0.25, "triangle", 0.08],
 	die: [420, 70, 0.45, "sawtooth", 0.06],
@@ -26,9 +36,16 @@ export const sound:
 	ac: null,
 };
 
-export function sfx(n: Sound): void
+/** When each sound last played, by performance.now(), so a burst of the same sound plays once. */
+const lastPlayed: Partial<Record<Sound, number>> = {};
+
+/** Plays a sound at volume k (1 is its usual volume), unless the same one played in the last 70 milliseconds. */
+export function sfx(n: Sound, k = 1): void
 {
 	if (sound.muted || sim.quiet) return;
+	const now = performance.now();
+	if (now - (lastPlayed[n] ?? 0) < 70) return;
+	lastPlayed[n] = now;
 	try
 	{
 		sound.ac ??= new AudioContext();
@@ -40,7 +57,7 @@ export function sfx(n: Sound): void
 		o.type = ty;
 		o.frequency.setValueAtTime(f1, t);
 		o.frequency.exponentialRampToValueAtTime(f2, t + d);
-		g.gain.setValueAtTime(v, t);
+		g.gain.setValueAtTime(v * k, t);
 		g.gain.exponentialRampToValueAtTime(0.0001, t + d);
 		o.connect(g).connect(ac.destination);
 		o.start(t);

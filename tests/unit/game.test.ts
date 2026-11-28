@@ -2,6 +2,7 @@ import {afterEach, expect, it, vi} from "vite-plus/test";
 import {placeAmong, setLevel, valid} from "../../src/game/course.ts";
 import {cpuChoosePick} from "../../src/game/cpu.ts";
 import {STEP} from "../../src/game/geometry.ts";
+import type {Sound} from "../../src/game/sound.ts";
 import {LEVELS} from "../../src/game/levels.ts";
 import {newRunner, stepRun} from "../../src/game/physics.ts";
 import {DEFS, pieceCells, TYPES} from "../../src/game/pieces.ts";
@@ -11,6 +12,17 @@ import type {Piece, PieceType, Run, Runner} from "../../src/game/types.ts";
 import {buildWorld, updateWorld} from "../../src/game/world.ts";
 
 afterEach(() => vi.restoreAllMocks());
+
+// The sounds played, as [name, volume], in place of Web Audio.
+const sounds = vi.hoisted((): [string, number][] => []);
+vi.mock(import("../../src/game/sound.ts"), async (load) => (
+{
+	...(await load()),
+	sfx: (n: Sound, k?: number) =>
+	{
+		sounds.push([n, k ?? 1]);
+	},
+}));
 
 // Puts a run on the first level, The Gap, with the given pieces, from the start or changed by `at`, and returns it.
 function startRun(pieces: Piece[], at?: Partial<Runner>): Run
@@ -776,6 +788,42 @@ it("has a CPU take the Mystery card one time in ten while it is there, and a blo
 		{
 			untaken: "m",
 			taken: 1,
+		},
+	);
+});
+
+// The sounds a laser at column c, row 10 makes over two and a half seconds, by then switched off and on again.
+function zaps(c: number, live: boolean): [string, number][]
+{
+	startRun([
+		{
+			type: "laser",
+			c,
+			r: 10,
+			rot: 0,
+			owner: 1,
+		},
+	]);
+	sounds.length = 0;
+	for (let i = 0; i < 300; i++) updateWorld(STEP, live);
+	return sounds.slice();
+}
+
+it("zaps when a laser comes on during a run, louder the closer the runner is, and stays quiet between runs", () =>
+{
+	expect(
+		{
+			near: zaps(3, true),
+			far: zaps(12, true),
+			outOfEarshot: zaps(30, true),
+			betweenRuns: zaps(3, false),
+		},
+	).toStrictEqual(
+		{
+			near: [["zap", 0.8924361733358253]],
+			far: [["zap", 0.48168537071423445]],
+			outOfEarshot: [],
+			betweenRuns: [],
 		},
 	);
 });

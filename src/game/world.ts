@@ -1,7 +1,7 @@
 import {burst} from "./effects.ts";
 import {DIRV, GRAV, H, T, W} from "./geometry.ts";
 import {pieceCells} from "./pieces.ts";
-import {sfx} from "./sound.ts";
+import {type Sound, sfx} from "./sound.ts";
 import {course, emptyWorld, game, sim} from "./state.ts";
 import type {Crumble, Gate, Mover, Rect, Solid} from "./types.ts";
 
@@ -584,10 +584,74 @@ export function buildWorld(): void
 /** How long a piece has been placed, by the shared clock. */
 const A = (o: {t0: number}): number => sim.clock - o.t0;
 
-/** Moves the world on by dt seconds. Cannons fire on their beat, and only make a sound while a run is live. */
+/** The sounds of the hazards that turn, blink, pop, swing, slam and buzz, each as it happens. */
+function hazardSounds(dt: number, hz: (n: Sound, x: number, y: number) => void): void
+{
+	const w = sim.world;
+	for (const f of w.firebars)
+	{
+		const h = Math.floor(f.a / Math.PI);
+		if (f.ht !== undefined && h !== f.ht) hz("whoosh", f.cx, f.cy);
+		f.ht = h;
+	}
+	for (const q of w.firetracks)
+	{
+		const h = Math.floor(q.a / Math.PI);
+		if (q.ht !== undefined && h !== q.ht) hz("whoosh", q.x, q.y);
+		q.ht = h;
+	}
+	for (const l of w.lasers)
+	{
+		if (l.was !== undefined && l.on && !l.was) hz("zap", l.r.x + l.r.w / 2, l.r.y + l.r.h / 2);
+		l.was = l.on;
+	}
+	for (const q of w.pops)
+	{
+		const up = q.up > 0.5;
+		if (q.was !== undefined && up && !q.was) hz("pop", q.r.x + q.r.w / 2, q.r.y);
+		q.was = up;
+	}
+	for (const q of w.axes)
+	{
+		const sg = Math.sign(q.a);
+		if (q.sg !== undefined && sg && sg !== q.sg) hz("swish", q.px + Math.sin(q.a) * 90, q.py + 90);
+		if (sg) q.sg = sg;
+	}
+	for (const q of w.crushers)
+	{
+		const down = q.y >= q.y0 + 3 * T - 1;
+		if (q.was !== undefined && down && !q.was) hz("slam", q.x + T / 2, q.y + T);
+		q.was = down;
+	}
+	w.sawT -= dt;
+	if (w.sawT <= 0)
+	{
+		w.sawT = 0.4;
+		for (const h of w.hazards) if (h.cause === "sawed") hz("buzz", h.x, h.y);
+		for (const q of w.sawtracks) hz("buzz", q.x, q.y);
+	}
+	const lava = course.level.lava;
+	const p = sim.run?.p;
+	if (lava?.length && p && Math.random() < dt * 1.5) hz("bubble", p.x, (lava[0]![1] + 0.3) * T);
+}
+
+/** Plays a hazard's sound at (x, y) during a run, louder the closer it is to the runner, and not at all 16 tiles away. */
+function near(live: boolean, n: Sound, x: number, y: number): void
+{
+	const p = sim.run?.p;
+	if (!live || !p) return;
+	const k = Math.max(0, 1 - Math.hypot(x - p.x - 15, y - p.y - 15) / (16 * T));
+	if (k > 0.05) sfx(n, 0.25 + 0.75 * k);
+}
+
+/** Moves the world on by dt seconds. Hazards make their sounds only while a run is live. */
 export function updateWorld(dt: number, live: boolean): void
 {
 	const w = sim.world;
+	const hz = (n: Sound, x: number, y: number): void =>
+	{
+		near(live, n, x, y);
+	};
 	sim.clock += dt;
 	w.time += dt;
 	const om = (2 * Math.PI) / 3.4;
@@ -651,9 +715,12 @@ export function updateWorld(dt: number, live: boolean): void
 		if (s.k === "blink")
 		{
 			const ph = A(s) % 4;
+			const was = s.off;
 			s.off = ph >= 2.6;
 			s.warn = ph > 2.1 && ph < 2.6;
+			if (was !== undefined && was !== s.off) hz("blip", s.x + s.w / 2, s.y + s.h / 2);
 		}
+	if (live) hazardSounds(dt, hz);
 	for (const s of w.solids) if (s.anim) s.anim = Math.max(0, s.anim - dt * 4);
 	for (const c of w.cannons)
 	{
@@ -679,7 +746,7 @@ export function updateWorld(dt: number, live: boolean): void
 					),
 				},
 			);
-			if (live) sfx("shot");
+			hz("shot", c.x, c.y);
 		}
 	}
 	w.balls = w.balls.filter((b) =>

@@ -206,6 +206,8 @@ export interface FireBar
 	dir: number;
 	owner: number;
 	t0: number;
+	/** The half turn it is on, for its whoosh. */
+	ht?: number;
 }
 /** A fire bar or saw riding a track. */
 export interface Track
@@ -218,6 +220,8 @@ export interface Track
 	a: number;
 	owner: number;
 	t0: number;
+	/** The half turn its fire bar is on, for its whoosh. */
+	ht?: number;
 }
 export interface Laser
 {
@@ -225,6 +229,8 @@ export interface Laser
 	owner: number;
 	r: Rect;
 	t0: number;
+	/** Whether it was on last step, to zap as it comes on. */
+	was?: boolean;
 }
 export interface Fan
 {
@@ -238,6 +244,8 @@ export interface PopSpikes
 	owner: number;
 	r: Rect;
 	t0: number;
+	/** Whether they were up last step, to pop as they shoot up. */
+	was?: boolean;
 }
 export interface Axe
 {
@@ -246,6 +254,8 @@ export interface Axe
 	a: number;
 	owner: number;
 	t0: number;
+	/** Which way it last swung, to swish as it turns. */
+	sg?: number;
 }
 /** A portal's entrance (a) and exit (b), by their top left corners. */
 export interface Portal
@@ -268,6 +278,8 @@ export interface Crusher
 	y: number;
 	owner: number;
 	t0: number;
+	/** Whether it was down last step, to slam as it lands. */
+	was?: boolean;
 }
 
 export interface Parts
@@ -308,6 +320,8 @@ export interface World
 	crushers: Crusher[];
 	gate: Gate | null;
 	swOn: boolean;
+	/** Seconds to the saws' next buzz. */
+	sawT: number;
 }
 
 export interface Runner extends Rect
