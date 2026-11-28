@@ -435,6 +435,9 @@ export interface Player
 	cpu: boolean;
 }
 
+/** A card in the box: a piece's index, or "m" for the Mystery card. */
+export type Pick = number | "m";
+
 export type Phase = "setup" | "vote" | "voted" | "pick" | "place" | "run" | "score" | "win";
 
 export interface Game
@@ -454,7 +457,8 @@ export interface Game
 	picks: Partial<Record<number, PieceType>>;
 	rot: number;
 	results: Result[];
-	sel: number | null;
+	/** The box card picked and waiting for a confirm: its index, or "m" for the Mystery card. */
+	sel: Pick | null;
 	votes: number[];
 	chosen: number;
 	lastMsg: string;
@@ -463,6 +467,10 @@ export interface Game
 	noFF: boolean;
 	/** A portal's entrance, placed and waiting for its exit. */
 	portalA: GridPos | null;
+	/** Whether someone has taken this round's Mystery card. */
+	mystTaken: boolean;
+	/** Whether a Mystery piece is being shown off, which holds up the picking. */
+	revealing: boolean;
 }
 
 /** The player setup, saved in localStorage under `pieceparty`. */

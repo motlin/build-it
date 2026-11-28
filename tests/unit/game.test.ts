@@ -1,5 +1,6 @@
 import {afterEach, expect, it, vi} from "vite-plus/test";
 import {placeAmong, setLevel, valid} from "../../src/game/course.ts";
+import {cpuChoosePick} from "../../src/game/cpu.ts";
 import {STEP} from "../../src/game/geometry.ts";
 import {LEVELS} from "../../src/game/levels.ts";
 import {newRunner, stepRun} from "../../src/game/physics.ts";
@@ -751,6 +752,30 @@ it("steps into a portal's entrance and pops out of its exit", () =>
 			x: 805,
 			y: 249,
 			plock: sim.world.portals[0],
+		},
+	);
+});
+
+it("has a CPU take the Mystery card one time in ten while it is there, and a block when the course cannot be finished", () =>
+{
+	setLevel(LEVELS[0]!);
+	game.pieces = [];
+	game.lastFin = 0;
+	game.box = ["spikes", "plank"];
+	vi.spyOn(Math, "random").mockReturnValue(0.05);
+	game.mystTaken = false;
+	const untaken = cpuChoosePick();
+	game.mystTaken = true;
+	const taken = cpuChoosePick();
+	expect(
+		{
+			untaken,
+			taken,
+		},
+	).toStrictEqual(
+		{
+			untaken: "m",
+			taken: 1,
 		},
 	);
 });

@@ -11,7 +11,7 @@ import {genCourse} from "./solver.ts";
 import {sfx} from "./sound.ts";
 import {course, game as G, placing, settings as S, sim} from "./state.ts";
 import {loadBest, loadSettings, saveBest, saveSettings} from "./storage.ts";
-import type {Piece, PieceType, Result} from "./types.ts";
+import type {Pick, Piece, PieceType, Result} from "./types.ts";
 import {buildWorld} from "./world.ts";
 
 // The game's flow and its screens: player setup, the level vote, picking from the box, placing on the course, the
@@ -120,7 +120,7 @@ function renderSetup(): void
   <li>If two or more players reach the winning score in the same round, the one with the <b>fastest run</b> that round wins.</li>
   <li>If nobody makes it, nobody scores. Keep building and try again next round.</li>
   <li>The course starts empty. You build it as you go.</li>
-  <li><b>Portals</b> send you from one spot to another, toward the flag or far away from it.</li>
+  <li>Can't decide? Grab the <b>Mystery</b> card for a completely random piece, but only one player per round can take it. <b>Portals</b> send you from one spot to another, toward the flag or far away from it.</li>
   <li>Short on players? Switch any player to <b>CPU</b> and the computer plays for them.</li></ul>
   <button class="pri big" id="startBtn">${n === 1 ? "Start practice" : "Start game"}</button></div>`;
 	ov().classList.add("show");
@@ -161,8 +161,11 @@ function onOverlayClick(e: MouseEvent): void
 		renderSetup();
 	}
 	else if (b.id === "startBtn") startGame();
-	else if (d["pick"] !== undefined) selectPick(Number(d["pick"]));
-	else if (b.id === "okPick" && G.sel != null) pickPiece(G.sel);
+	else if (d["pick"] !== undefined)
+	{
+		if (!G.revealing) selectPick(d["pick"] === "m" ? "m" : Number(d["pick"]));
+	}
+	else if (b.id === "okPick" && G.sel != null && !G.revealing) pickPiece(G.sel);
 	else if (b.id === "nextBtn") nextRound();
 	else if (b.id === "againBtn")
 	{
@@ -320,7 +323,7 @@ export function cpuTick(now: number): void
 		else if (now > cpuT) (document.getElementById("nextBtn") ?? document.getElementById("winBtn"))?.click();
 		return;
 	}
-	if (!cpuTurn())
+	if (!cpuTurn() || G.revealing)
 	{
 		cpuKey = "";
 		return;
@@ -498,6 +501,7 @@ function nextRound(): void
 	G.picks = {};
 	G.results = [];
 	G.box = fillBox(n, G.round, G.drought);
+	G.mystTaken = false;
 	G.phase = "pick";
 	buildWorld();
 	renderPick();
@@ -515,8 +519,10 @@ function renderPick(): void
 			const d = DEFS[t];
 			return `<button class="pc${sel === i ? " sel" : ""}" data-pick="${i}" aria-pressed="${sel === i}"><canvas width="280" height="168" data-t="${t}"></canvas><b>${d.name}</b><small>${d.tip}</small><span class="tag t-${d.kind}">${KIND[d.kind]}</span></button>`;
 		})
-		.join("")}</div>
-  <div class="row" style="margin-top:14px"><button class="pri big" id="okPick" ${sel == null ? "disabled" : ""}>${sel == null ? "Tap a piece to choose it" : "Confirm: take the " + DEFS[G.box[sel]!].name}</button></div>
+		.join(
+			"",
+		)}${G.mystTaken ? "" : `<button class="pc myst${sel === "m" ? " sel" : ""}" data-pick="m" aria-pressed="${sel === "m"}"><span class="qm">?</span><b>Mystery</b><small>Only one per round! Get a completely random piece, revealed after you confirm.</small><span class="tag t-clear">Random</span></button>`}</div>
+  <div class="row" style="margin-top:14px"><button class="pri big" id="okPick" ${sel == null ? "disabled" : ""}>${sel == null ? "Tap a piece to choose it" : sel === "m" ? "Confirm: take a Mystery piece" : "Confirm: take the " + DEFS[G.box[sel]!].name}</button></div>
   ${
 		Object.keys(G.picks).length
 			? `<div class="picked">Already picked: ${G.order
@@ -533,20 +539,46 @@ function renderPick(): void
 
 const pieceTypeOf = (c: HTMLCanvasElement): PieceType => TYPES.find((t) => t === c.dataset["t"])!;
 
-function selectPick(i: number): void
+function selectPick(i: Pick): void
 {
 	G.sel = i;
 	sfx("place");
 	renderPick();
 }
 
-function pickPiece(i: number): void
+function pickPiece(i: Pick): void
 {
 	G.sel = null;
 	const pi = G.order[G.turn]!;
+	if (i === "m")
+	{
+		if (G.mystTaken) return;
+		const t = TYPES[rand(TYPES.length)]!;
+		const d = DEFS[t];
+		G.picks[pi] = t;
+		G.mystTaken = true;
+		G.revealing = true;
+		sfx("win");
+		clearTimeout(popT);
+		$("pop").classList.remove("show");
+		ov().innerHTML = `<div class="card reveal"><h2>Mystery piece!</h2><p class="lede">${chipOf(pi)} got...</p><canvas width="420" height="240" id="mysCv"></canvas><h2 style="color:var(--acc)">${d.name}</h2><p class="lede">${d.tip}</p></div>`;
+		drawThumb($canvas("mysCv"), t, 0);
+		setTimeout(() =>
+		{
+			G.revealing = false;
+			nextPicker();
+		}, 1700);
+		return;
+	}
 	G.picks[pi] = G.box[i]!;
 	G.box.splice(i, 1);
 	sfx("pick");
+	nextPicker();
+}
+
+/** On to the next player's pick, or to placing once everyone has a piece. */
+function nextPicker(): void
+{
 	G.turn++;
 	if (G.turn >= G.players.length)
 	{

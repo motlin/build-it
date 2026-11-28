@@ -4,14 +4,18 @@ import {DEFS, pieceCells, SOLIDT} from "./pieces.ts";
 import {die, stepRun} from "./physics.ts";
 import {explore, solvable} from "./solver.ts";
 import {course, game, sim} from "./state.ts";
-import type {Action, CpuRun, Piece, PieceType, PlanNode, Planner, Runner} from "./types.ts";
+import type {Action, CpuRun, Pick, Piece, PieceType, PlanNode, Planner, Runner} from "./types.ts";
 
 // The computer players: which piece to take, where to put it, and how to run. A run is planned with the real physics
 // on a frozen world, then followed, and re-planned when the runner is knocked off course.
 
-/** The index in the box of the piece a CPU takes: blocks when the course cannot be finished, hazards when it can. */
-export function cpuChoosePick(): number
+/**
+ * The box card a CPU takes: now and then the Mystery card, otherwise blocks when the course cannot be finished and
+ * hazards when it can.
+ */
+export function cpuChoosePick(): Pick
 {
+	if (!game.mystTaken && Math.random() < 0.1) return "m";
 	const ok = solvable(game.pieces) || game.lastFin >= 0.5;
 	const v = game.box.map((t) =>
 	{

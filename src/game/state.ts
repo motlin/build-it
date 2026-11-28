@@ -56,6 +56,8 @@ export const game: Game =
 	skill: 1,
 	noFF: false,
 	portalA: null,
+	mystTaken: false,
+	revealing: false,
 };
 
 export const emptyWorld = (): World => (
