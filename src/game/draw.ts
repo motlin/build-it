@@ -902,7 +902,7 @@ function hardHat(g: CanvasRenderingContext2D, cx: number, by: number, s: number,
 	g.restore();
 }
 
-/** A player's square, s wide and h high (shorter when crouched), in its hard hat. */
+/** A player's square, s wide and h high (shorter when crouched), with eyes and a hard hat. */
 function square(
 	g: CanvasRenderingContext2D,
 	x: number,
@@ -920,6 +920,14 @@ function square(
 	g.fillRect(x, y, s, h);
 	g.fillStyle = c;
 	g.fillRect(x + 2.5, y + 2.5, s - 5, h - 5);
+	// Two eyes looking the way it faces, which blink every few seconds, each square at its own moment.
+	const blink = (performance.now() / 1000 + x * 0.013) % 3.2 < 0.12;
+	const ew = Math.max(2, Math.round(s * 0.1));
+	const eh = blink ? 2 : Math.max(3, Math.round(Math.min(s * 0.3, h * 0.45)));
+	const ey = Math.round(y + h * 0.56 - eh / 2);
+	const ex = x + s / 2 + face * s * 0.14;
+	g.fillStyle = "#1b1b2f";
+	for (const d of [-1, 1]) g.fillRect(Math.round(ex + d * s * 0.13 - ew / 2), ey, ew, eh);
 	hardHat(g, x + s / 2, y + 1, s, face);
 	g.restore();
 }
