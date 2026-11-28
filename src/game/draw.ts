@@ -1403,12 +1403,13 @@ export function draw(): void
 			const ly = Math.max(26, my * T - 12);
 			ctx.font = "700 16px Fredoka,system-ui";
 			ctx.textAlign = "center";
-			const tw = ctx.measureText("Confirm?").width + 20;
+			const lab = gh.ok ? "Confirm?" : "Does not fit";
+			const tw = ctx.measureText(lab).width + 20;
 			ctx.fillStyle = "rgba(15,24,48,.85)";
 			rr(ctx, lx - tw / 2, ly - 20, tw, 26, 8);
 			ctx.fill();
-			ctx.fillStyle = "#ffd166";
-			ctx.fillText("Confirm?", lx, ly - 2);
+			ctx.fillStyle = gh.ok ? "#ffd166" : "#ff8fa3";
+			ctx.fillText(lab, lx, ly - 2);
 		}
 	}
 	for (const f of sim.fx)

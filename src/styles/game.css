@@ -26,6 +26,7 @@ h1 b{color:var(--acc)}
 .tray{margin-top:10px;background:var(--panel);border-radius:16px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;min-height:84px}
 .pal{flex:1 1 100%;display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}.pal button{flex:none;padding:4px;min-height:0;border:2px solid transparent;background:var(--panel2)}.pal button.on{border-color:var(--acc)}.pal canvas{width:56px;height:32px;display:block;background:#3fb6f0;border-radius:6px}
 .btns{display:flex;flex-wrap:wrap;gap:8px}
+.nudge{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,40px);gap:4px}.nudge button{min-height:0;padding:0;font-size:16px}.nudge [data-nudge="0,-1"]{grid-column:2}.nudge [data-nudge="-1,0"]{grid-column:1;grid-row:2}.nudge [data-nudge="0,1"]{grid-column:2;grid-row:2}.nudge [data-nudge="1,0"]{grid-column:3;grid-row:2}
 .tray .msg{flex:1 1 240px;font-size:17px}
 .tray .msg small{display:block;color:var(--mut);font-size:14px}
 .who{display:inline-flex;align-items:center;gap:6px;font-weight:700;vertical-align:middle}

@@ -107,7 +107,13 @@ test("a 2-player round: vote, pick, toggle the sound, place or discard, give up 
 	// Red drags the piece from the tray to the middle of the open sky and confirms; Sunny discards. A portal goes down
 	// in two steps, its entrance and then its exit.
 	await expect(page.locator("#tray .msg")).toContainText(/Red, (drag your|place the portal entrance)/);
-	await dragHoldTo(page, 16, 5);
+	// Dropped into the ground, it does not fit until it is cancelled and dragged to the sky, then nudged along.
+	await dragHoldTo(page, 1, 15);
+	await expect(page.locator("#tray .msg")).toContainText("doesn't fit there");
+	await expect(page.locator("#okPlace")).toBeDisabled();
+	await page.locator("#movePlace").click();
+	await dragHoldTo(page, 15, 5);
+	await page.locator('button[data-nudge="1,0"]').click();
 	await expect(page.locator("#tray .msg")).toContainText("Red, place your");
 	await page.locator("#okPlace").click();
 	if ((await page.locator("#tray .msg").textContent())!.includes("portal exit"))

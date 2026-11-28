@@ -621,13 +621,24 @@ export function renderTray(): void
 			return;
 		}
 		const what = held() === "portal" ? (G.portalA ? "portal exit" : "portal entrance") : d.name;
-		if (placing.pend)
+		const pend = placing.pend;
+		if (pend)
 		{
-			tray().innerHTML = `<div class="msg">${chipOf(pi)}, place your <b>${what}</b> here?<small>Enter to confirm, Esc to move it. You can also click another spot${d.rots > 1 ? " or rotate it" : ""}.</small></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="movePlace">Move it</button><button class="pri" id="okPlace">Confirm</button>`;
+			const fits = valid(
+				{
+					type: held(),
+					c: pend.c,
+					r: pend.r,
+					rot: G.rot,
+					owner: -1,
+				},
+				placeAmong(held()),
+			);
+			tray().innerHTML = `<div class="msg">${chipOf(pi)}, ${fits ? `place your <b>${what}</b> here?` : `your <b>${d.name}</b> doesn't fit there.`}<small>Enter to confirm, Esc to cancel. Arrow buttons nudge it, or click another spot.</small></div><div class="nudge" aria-label="Nudge piece"><button data-nudge="0,-1" aria-label="Up">▲</button><button data-nudge="-1,0" aria-label="Left">◀</button><button data-nudge="0,1" aria-label="Down">▼</button><button data-nudge="1,0" aria-label="Right">▶</button></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="movePlace">Cancel</button><button class="pri" id="okPlace" ${fits ? "" : "disabled"}>Confirm</button>`;
 			renderHUD();
 			return;
 		}
-		tray().innerHTML = `<canvas id="hold" width="240" height="128" title="Drag onto the course"></canvas><div class="msg">${chipOf(pi)}, ${held() === "portal" ? (G.portalA ? "now place the <b>portal exit</b>." : "place the <b>portal entrance</b> first, then its exit.") : `drag your <b>${d.name}</b> onto the course.`}<small>Or hover the course and click. ${d.rots > 1 ? "R, right-click or scroll to rotate." : ""} Green outline means it fits. You'll confirm before it's placed.</small></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="skipBtn">${placing.discardArm ? "Tap again to discard" : "Discard piece"}</button>`;
+		tray().innerHTML = `<canvas id="hold" width="240" height="128" title="Drag onto the course"></canvas><div class="msg">${chipOf(pi)}, ${held() === "portal" ? (G.portalA ? "now place the <b>portal exit</b>." : "place the <b>portal entrance</b> first, then its exit.") : `drag your <b>${d.name}</b> onto the course.`}<small>Or hover the course and click. ${d.rots > 1 ? "R, right-click or scroll to rotate." : ""} You'll confirm before it's placed.</small></div>${d.rots > 1 ? '<button id="rotBtn">Rotate</button>' : ""}<button id="skipBtn">${placing.discardArm ? "Tap again to discard" : "Discard piece"}</button>`;
 		drawThumb($canvas("hold"), held(), G.rot);
 		bindHold();
 	}
@@ -658,6 +669,16 @@ function onTrayClick(e: MouseEvent): void
 	else if (b.id === "movePlace")
 	{
 		placing.pend = null;
+		renderTray();
+	}
+	else if (b.dataset["nudge"] && placing.pend)
+	{
+		const [dc = 0, dr = 0] = b.dataset["nudge"].split(",").map(Number);
+		placing.pend =
+		{
+			c: placing.pend.c + dc,
+			r: placing.pend.r + dr,
+		};
 		renderTray();
 	}
 	else if (b.id === "goBtn") beginRun();
@@ -708,6 +729,8 @@ export function rotate(): void
 	const h = document.getElementById("hold");
 	if (h instanceof HTMLCanvasElement) drawThumb(h, held(), G.rot);
 	if (placing.ghost) setGhost(placing.ghost.c, placing.ghost.r);
+	// Whether the piece waiting for a confirm still fits.
+	if (placing.pend) renderTray();
 }
 
 function setGhost(c: number, r: number): void
@@ -746,26 +769,29 @@ export function ghostFrom(e: PointerEvent, lift: number): void
 	setGhost(Math.round(wx / T - bw / 2), Math.round(wy / T - bh / 2));
 }
 
-/** Drops the held piece at the ghost: straight onto the course in practice, or to confirm in a game. */
+/**
+ * Drops the held piece at the ghost: straight onto the course in practice if it fits, or in a game to wait for a
+ * confirm, where it can be nudged into a spot it fits.
+ */
 export function placeGhost(): void
 {
 	const ghost = placing.ghost;
 	if (!ghost) return;
-	if (!ghost.ok)
-	{
-		sfx("bad");
-		return;
-	}
 	if (!G.solo)
 	{
+		sfx(ghost.ok ? "pick" : "bad");
 		placing.pend =
 		{
 			c: ghost.c,
 			r: ghost.r,
 		};
 		placing.ghost = null;
-		sfx("pick");
 		renderTray();
+		return;
+	}
+	if (!ghost.ok)
+	{
+		sfx("bad");
 		return;
 	}
 	doPlace();
